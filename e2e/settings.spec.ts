@@ -58,3 +58,12 @@ test('sync is off by default and offers Google sign-in', async ({ page }) => {
   await expect(card.getByRole('button', { name: 'Sign in with Google and turn on sync' })).toBeVisible()
   await expect(page.getByRole('link', { name: /^Sync:/ })).toHaveCount(0)
 })
+
+test('the install button is always there, with steps when the browser has no prompt', async ({ page }) => {
+  await page.goto('./#/settings')
+  await page.getByRole('button', { name: 'Install app' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Install ALT Dashboard' })
+  await expect(dialog.getByRole('listitem').first()).toBeVisible()
+  await dialog.getByRole('button', { name: 'Got it' }).click()
+  await expect(dialog).toBeHidden()
+})

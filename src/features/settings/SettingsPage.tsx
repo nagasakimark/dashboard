@@ -1,13 +1,13 @@
 import { format } from 'date-fns'
-import { HardDriveDownload, Palette, Smartphone, UserRound } from 'lucide-react'
+import { Palette, UserRound } from 'lucide-react'
 import { Page } from '@/components/layout/Page'
-import { Button, Card, CardHeader, Field, Input, Select } from '@/components/ui'
+import { Card, CardHeader, Field, Input, Select } from '@/components/ui'
 import { useSettings } from '@/data/settings'
-import { useInstallPrompt } from '@/app/useInstallPrompt'
 import { cn } from '@/lib/cn'
 import { useDraft } from '@/lib/useDraft'
 import { ClassroomSection } from './ClassroomSection'
 import { DataSection } from './DataSection'
+import { InstallSection } from './InstallSection'
 import { SyncSection } from './SyncSection'
 
 const ACCENTS = ['#4f46e5', '#2563eb', '#0891b2', '#059669', '#65a30d', '#d97706', '#dc2626', '#db2777', '#9333ea', '#475569']
@@ -16,13 +16,14 @@ const DATE_FORMATS = ['d MMM yyyy', 'dd/MM/yyyy', 'MM/dd/yyyy', 'yyyy/MM/dd', 'y
 
 export default function SettingsPage() {
   const { settings, setSetting } = useSettings()
-  const install = useInstallPrompt()
   const [name, setName, flushName] = useDraft(settings.profileName, (v) => setSetting('profileName', v))
   const sample = new Date(2026, 8, 27)
 
   return (
     <Page title="Settings" description="Personalise the dashboard and manage your data.">
       <div className="space-y-5">
+        <InstallSection />
+
         <Card>
           <CardHeader icon={UserRound} title="Profile" description="Used on reports and printed lesson plans." />
           <div className="px-5 pb-5">
@@ -115,24 +116,6 @@ export default function SettingsPage() {
 
         <SyncSection />
 
-        <Card>
-          <CardHeader
-            icon={Smartphone}
-            title="Install as an app"
-            description={
-              install.installed
-                ? 'The dashboard is installed on this device and works offline.'
-                : 'Install the dashboard for a full-screen app that works offline. On iPhone, use Share → Add to Home Screen.'
-            }
-            actions={
-              install.canInstall && (
-                <Button variant="primary" size="sm" icon={HardDriveDownload} onClick={install.install}>
-                  Install
-                </Button>
-              )
-            }
-          />
-        </Card>
 
         <p className="pt-2 pb-4 text-center text-xs text-ink-faint">
           ALT Dashboard {__APP_VERSION__} ·{' '}

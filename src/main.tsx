@@ -4,6 +4,8 @@ import { isStudentRoute } from '@/app/routes'
 // Direct import (not the ui barrel) keeps the router out of the entry chunk.
 import { Spinner } from '@/components/ui/Card'
 import './styles/index.css'
+// Listen for the browser's install offer from the first moment: it fires once, early.
+import '@/app/useInstallPrompt'
 
 // Students joining a poll get a tiny standalone bundle; everyone else gets
 // the full app. The student page must answer at /dashboard/student?room=…
