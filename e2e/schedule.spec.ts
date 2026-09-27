@@ -92,7 +92,11 @@ test('month, year and tally views summarise the schedule', async ({ page }, info
   await expect(page.getByRole('button', { name: /Monday 13 January, Public Holiday/ })).toBeVisible()
   await page.screenshot({ path: `test-results/shots/schedule-month-${info.project.name}.png` })
 
-  await page.getByRole('tab', { name: 'Tally' }).click()
+  // Phones switch views from the header's view menu; bigger screens have tabs.
+  if (info.project.name === 'phone') {
+    await page.getByRole('button', { name: /^View: / }).click()
+    await page.getByRole('menuitem', { name: /Tally/ }).click()
+  } else await page.getByRole('tab', { name: 'Tally' }).click()
   await page.getByLabel('Start week').fill('2025-01-06')
   await page.getByLabel('Weeks').fill('2')
   const table = page.getByRole('table', { name: 'Lessons per class per week' })

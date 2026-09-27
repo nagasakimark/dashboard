@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { format, isToday } from 'date-fns'
 import { ChevronRight } from 'lucide-react'
 import type { DayAssignment, LessonPlan, Period, School } from '@/data/schema'
@@ -32,7 +32,14 @@ export function AgendaView({ days, selected, onSelect, onShift, dayMap, periods,
   const touch = useRef<{ x: number; y: number } | null>(null)
 
   const index = days.findIndex((d) => iso(d) === key)
+  // Which way the day list slides in: from the right going forward, from the left going back.
+  const [from, setFrom] = useState<'left' | 'right' | null>(null)
+  const pick = (d: Date) => {
+    setFrom(iso(d) > key ? 'right' : iso(d) < key ? 'left' : null)
+    onSelect(d)
+  }
   const go = (dir: -1 | 1) => {
+    setFrom(dir > 0 ? 'right' : 'left')
     const next = days[index + dir]
     if (next) onSelect(next)
     else onShift(dir)
@@ -40,6 +47,7 @@ export function AgendaView({ days, selected, onSelect, onShift, dayMap, periods,
 
   return (
     <div
+      className="flex min-h-0 flex-1 flex-col"
       onTouchStart={(e) => (touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY })}
       onTouchEnd={(e) => {
         const start = touch.current
@@ -53,7 +61,7 @@ export function AgendaView({ days, selected, onSelect, onShift, dayMap, periods,
       <div
         role="tablist"
         aria-label="Days"
-        className="mb-3 grid gap-1.5"
+        className="mb-2 grid shrink-0 gap-1.5"
         style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}
       >
         {days.map((d) => {
@@ -66,9 +74,9 @@ export function AgendaView({ days, selected, onSelect, onShift, dayMap, periods,
               type="button"
               role="tab"
               aria-selected={on}
-              onClick={() => onSelect(d)}
+              onClick={() => pick(d)}
               className={cn(
-                'flex flex-col items-center rounded-2xl py-2 transition-colors',
+                'flex flex-col items-center rounded-2xl py-1.5 transition-colors',
                 on ? 'bg-accent text-white shadow-sm' : 'bg-surface text-ink',
                 !on && isToday(d) && 'ring-2 ring-accent/40',
               )}
@@ -88,7 +96,7 @@ export function AgendaView({ days, selected, onSelect, onShift, dayMap, periods,
       <button
         type="button"
         onClick={() => onEditDay(key)}
-        className="mb-3 flex w-full items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3 text-left shadow-card"
+        className="mb-2 flex w-full shrink-0 items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-2 text-left shadow-card"
         style={school ? { backgroundColor: `color-mix(in oklab, ${school.color} 9%, white)` } : undefined}
       >
         <span className="min-w-0 flex-1">
@@ -102,16 +110,22 @@ export function AgendaView({ days, selected, onSelect, onShift, dayMap, periods,
       </button>
 
       {day?.kind === 'off' && !slots.some((s) => periods.has(periodId(key, s))) ? (
-        <p className="rounded-2xl bg-surface p-6 text-center text-sm text-ink-soft">{day.dayType}: no classes.</p>
+        <p key={key} className="grid flex-1 place-items-center rounded-2xl bg-surface p-6 text-center text-sm text-ink-soft">
+          {day.dayType}: no classes.
+        </p>
       ) : (
-        <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
+        // The periods share the rest of the screen; the list scrolls only if they can't fit.
+        <ul
+          key={key}
+          className={cn(
+            'flex min-h-0 flex-1 flex-col divide-y divide-line overflow-y-auto rounded-2xl border border-line bg-surface shadow-card',
+            from === 'right' && 'animate-from-right',
+            from === 'left' && 'animate-from-left',
+          )}
+        >
           {slots.map((slot) => (
-            <li key={String(slot)} className={cn(slot === 'lunch' && 'bg-warning/4')}>
-              <button
-                type="button"
-                onClick={() => onEditPeriod({ date: key, slot })}
-                className="group block min-h-16 w-full active:bg-canvas"
-              >
+            <li key={String(slot)} className={cn('flex min-h-16 flex-[1_1_0]', slot === 'lunch' && 'min-h-11 flex-[0.6_1_0] bg-warning/4')}>
+              <button type="button" onClick={() => onEditPeriod({ date: key, slot })} className="group block w-full active:bg-canvas">
                 <PeriodCellContent
                   slot={slot}
                   period={periods.get(periodId(key, slot))}

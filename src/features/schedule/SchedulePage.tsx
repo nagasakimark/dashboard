@@ -44,6 +44,12 @@ const ReportDialog = lazy(() => import('./report/ReportDialog'))
 
 type View = 'week' | 'month' | 'year' | 'tally'
 const VIEWS: View[] = ['week', 'month', 'year', 'tally']
+const VIEW_LABELS: Record<View, string> = { week: 'Week', month: 'Month', year: 'Year', tally: 'Tally' }
+const VIEW_ICONS = { week: Rows3, month: CalendarDays, year: Grid3x3, tally: BarChart3 }
+
+/** "6–10 Jan", or "30 Jun – 4 Jul" across months (phones). */
+const weekTitleShort = (a: Date, b: Date) =>
+  a.getMonth() === b.getMonth() ? `${format(a, 'd')}–${format(b, 'd MMM')}` : `${format(a, 'd MMM')} – ${format(b, 'd MMM')}`
 
 export default function SchedulePage() {
   const [params, setParams] = useSearchParams()
@@ -116,7 +122,9 @@ export default function SchedulePage() {
       : view === 'month'
         ? format(anchor, 'MMMM yyyy')
         : view === 'week'
-          ? `${format(days[0] ?? anchor, 'd MMM')} – ${format(days[days.length - 1] ?? anchor, isDesktop ? 'd MMM yyyy' : 'd MMM')}`
+          ? isDesktop
+            ? `${format(days[0] ?? anchor, 'd MMM')} – ${format(days[days.length - 1] ?? anchor, 'd MMM yyyy')}`
+            : weekTitleShort(days[0] ?? anchor, days[days.length - 1] ?? anchor)
           : 'Tally'
 
   const copyWeek = async () => {
@@ -137,12 +145,7 @@ export default function SchedulePage() {
       value={view}
       onChange={(v) => go({ v })}
       label="Schedule view"
-      items={[
-        { id: 'week', label: 'Week', icon: Rows3 },
-        { id: 'month', label: 'Month', icon: CalendarDays },
-        { id: 'year', label: 'Year', icon: Grid3x3 },
-        { id: 'tally', label: 'Tally', icon: BarChart3 },
-      ]}
+      items={[...VIEWS.map((id) => ({ id, label: VIEW_LABELS[id], icon: VIEW_ICONS[id] }))]}
     />
   )
 
@@ -150,7 +153,7 @@ export default function SchedulePage() {
     <Page
       width="full"
       title={title}
-      fill={isDesktop && view !== 'tally'}
+      fill={view === 'tally' ? false : isDesktop ? true : view === 'week' ? 'always' : false}
       tools={tabs}
       actions={
         <>
@@ -163,6 +166,17 @@ export default function SchedulePage() {
               {(!isDesktop || view !== 'week') && <IconButton icon={ChevronRight} label="Next" onClick={() => step(1)} />}
             </div>
           )}
+          {/* Phones: the view switch lives in the header instead of a row of tabs. */}
+          <span className="contents md:hidden">
+            <Menu
+              trigger={(p) => <IconButton {...p} icon={VIEW_ICONS[view]} label={`View: ${VIEW_LABELS[view]}`} />}
+              items={VIEWS.map((v) => ({
+                label: v === view ? `${VIEW_LABELS[v]} ✓` : VIEW_LABELS[v],
+                icon: VIEW_ICONS[v],
+                onSelect: () => go({ v }),
+              }))}
+            />
+          </span>
           <span className="hidden sm:contents">
             <Button icon={FileText} onClick={() => setReportOpen(true)}>
               PDF report
@@ -178,8 +192,6 @@ export default function SchedulePage() {
         </>
       }
     >
-      <div className="mb-4 md:hidden">{tabs}</div>
-
       {loading ? (
         <div className="grid h-64 place-items-center">
           <Spinner />

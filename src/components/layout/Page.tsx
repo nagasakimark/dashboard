@@ -9,8 +9,11 @@ interface PageProps {
   /** Constrain content width (default) or use the full width (calendars). */
   width?: 'default' | 'wide' | 'full'
   className?: string
-  /** On tablets and up, fill the window exactly (no page scroll); content gets the remaining height. */
-  fill?: boolean
+  /**
+   * Fill the window exactly (no page scroll); content gets the remaining height.
+   * `true`: tablets and up. `'always'`: phones too (above the bottom tab bar).
+   */
+  fill?: boolean | 'always'
   /** Extra controls on the header's left, after the title (e.g. view tabs). */
   tools?: ReactNode
 }
@@ -19,7 +22,13 @@ interface PageProps {
 export function Page({ title, description, actions, children, width = 'default', className, fill = false, tools }: PageProps) {
   const max = width === 'full' ? 'max-w-none' : width === 'wide' ? 'max-w-7xl' : 'max-w-5xl'
   return (
-    <div className={cn('flex min-h-full flex-col', fill && 'md:h-dvh md:min-h-0')}>
+    <div
+      className={cn(
+        'flex min-h-full flex-col',
+        fill && 'md:h-dvh md:min-h-0',
+        fill === 'always' && 'h-[calc(100dvh-4.25rem-env(safe-area-inset-bottom))] min-h-0',
+      )}
+    >
       <header className="safe-top sticky top-0 z-30 border-b border-line/70 bg-canvas/85 backdrop-blur">
         <div className={cn('mx-auto flex w-full items-center gap-3 px-4 py-3 sm:px-6 md:py-4', max)}>
           <div className={cn('min-w-0', !tools && 'flex-1')}>
@@ -31,7 +40,13 @@ export function Page({ title, description, actions, children, width = 'default',
         </div>
       </header>
       <div
-        className={cn('mx-auto w-full flex-1 px-4 py-5 sm:px-6 md:py-6', fill && 'md:flex md:min-h-0 md:flex-col md:py-3', max, className)}
+        className={cn(
+          'mx-auto w-full flex-1 px-4 py-5 sm:px-6 md:py-6',
+          fill && 'md:flex md:min-h-0 md:flex-col md:py-3',
+          fill === 'always' && 'flex min-h-0 flex-col py-3',
+          max,
+          className,
+        )}
       >
         {children}
       </div>
