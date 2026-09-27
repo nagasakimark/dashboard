@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Eye, Lightbulb, Volume2 } from 'lucide-react
 import { cn } from '@/lib/cn'
 import type { Card } from '../data'
 import { isTypeable, shuffle, speak } from '../engine'
+import { tilesAcross, TILE, tileRowStyle, wordGroups } from '../tiles'
 import { BigButton, CardImage, Japanese } from '../ui'
 
 /** Spell the word: letters appear as the class calls them out (or type them). */
@@ -54,24 +55,40 @@ export default function Spelling({ cards, showJa }: { cards: Card[]; showJa: boo
         </div>
         {showJa && <Japanese card={card} className="text-2xl" />}
         <p className="text-lg font-semibold text-ink-soft">Spell the word</p>
-        <div className="flex flex-wrap justify-center gap-2" aria-live="polite" aria-label="Word">
-          {word.split('').map((ch, k) =>
-            isTypeable(ch) ? (
-              <span
-                key={k}
-                className={cn(
-                  'grid h-16 w-12 place-items-center rounded-xl border-b-4 text-4xl font-black sm:h-20 sm:w-16 sm:text-5xl',
-                  k <= shownUpTo ? (done ? 'border-success text-success' : 'border-accent text-ink') : 'border-ink/20 text-transparent',
+        <div className="w-full [container-type:inline-size]">
+          <div
+            className="flex flex-wrap justify-center gap-x-[calc(var(--tile)*0.45)] gap-y-3"
+            style={tileRowStyle(tilesAcross(word))}
+            aria-live="polite"
+            aria-label="Word"
+          >
+            {wordGroups(word).map((g) => (
+              <span key={g[0]} className="flex gap-[0.4rem]">
+                {g.map((k) =>
+                  isTypeable(word[k]) ? (
+                    <span
+                      key={k}
+                      className={cn(
+                        TILE,
+                        'rounded-xl border-b-4',
+                        k <= shownUpTo
+                          ? done
+                            ? 'border-success text-success'
+                            : 'border-accent text-ink'
+                          : 'border-ink/20 text-transparent',
+                      )}
+                    >
+                      {k <= shownUpTo ? word[k].toUpperCase() : '_'}
+                    </span>
+                  ) : (
+                    <span key={k} className={cn(TILE, 'w-[calc(var(--tile)*0.4)] place-items-end')}>
+                      {word[k]}
+                    </span>
+                  ),
                 )}
-              >
-                {k <= shownUpTo ? ch.toUpperCase() : '_'}
               </span>
-            ) : (
-              <span key={k} className="grid h-16 w-4 place-items-end text-4xl font-black sm:h-20">
-                {ch === ' ' ? '' : ch}
-              </span>
-            ),
-          )}
+            ))}
+          </div>
         </div>
       </div>
       <div className="flex flex-wrap justify-center gap-3">

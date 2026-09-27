@@ -3,6 +3,7 @@ import { Volume2 } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { uniqueCards, withImages, type Card } from '../data'
 import { shuffle, speak, useScore, withDistractors } from '../engine'
+import { FitText } from '../FitText'
 import { BigButton, CardImage, Japanese, NotEnough, ScoreBar } from '../ui'
 
 const CORNERS = ['top-3 left-3', 'top-3 right-3', 'bottom-3 left-3', 'bottom-3 right-3']
@@ -70,7 +71,7 @@ export default function CornerPop({ cards, showJa }: { cards: Card[]; showJa: bo
         </button>
       ))}
       <div className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 flex-col items-center gap-3 px-[34%] text-center">
-        <div className="text-[clamp(2rem,6vw,5rem)] leading-none font-black tracking-tight text-ink">{state.answer.en}</div>
+        <FitText text={state.answer.en} max={80} min={18} className="font-black tracking-tight text-ink" />
         {showJa && <Japanese card={state.answer} className="text-2xl" />}
         <div className="min-h-10 text-3xl font-black" aria-live="polite">
           {picked &&

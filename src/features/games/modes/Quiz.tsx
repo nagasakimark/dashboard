@@ -3,6 +3,7 @@ import { ArrowRight } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { withImages, type Card } from '../data'
 import { shuffle, useScore, withDistractors } from '../engine'
+import { FitText } from '../FitText'
 import { BigButton, CardImage, Japanese, NotEnough, ScoreBar } from '../ui'
 
 /** Four-choice quiz: which word matches the picture? */
@@ -46,7 +47,7 @@ export default function Quiz({ cards, showJa }: { cards: Card[]; showJa: boolean
               type="button"
               onClick={() => choose(o.en)}
               className={cn(
-                'rounded-2xl px-4 py-4 text-[clamp(1.25rem,3vw,2.25rem)] leading-tight font-black ring-2 transition-all',
+                'flex min-h-[4.75rem] items-center rounded-2xl px-4 py-3 font-black ring-2 transition-all',
                 right
                   ? 'scale-[1.03] bg-success text-white ring-success'
                   : wrong
@@ -56,7 +57,7 @@ export default function Quiz({ cards, showJa }: { cards: Card[]; showJa: boolean
                       : 'bg-surface text-ink ring-line hover:ring-accent',
               )}
             >
-              {o.en}
+              <FitText text={o.en} max={36} min={14} />
             </button>
           )
         })}

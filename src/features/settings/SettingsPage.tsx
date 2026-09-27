@@ -116,7 +116,6 @@ export default function SettingsPage() {
 
         <SyncSection />
 
-
         <p className="pt-2 pb-4 text-center text-xs text-ink-faint">
           ALT Dashboard {__APP_VERSION__} ·{' '}
           <a className="underline" href="https://github.com/nagasakimark/dashboard">

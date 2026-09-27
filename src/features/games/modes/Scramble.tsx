@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Delete, Eye } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import type { Card } from '../data'
 import { isTypeable, scramble, shuffle, useScore } from '../engine'
+import { tilesAcross, TILE, tileRowStyle, wordGroups } from '../tiles'
 import { BigButton, CardImage, Japanese, ScoreBar } from '../ui'
 
 /** Put the scrambled letters back in order (click, or type them). */
@@ -63,45 +64,66 @@ export default function Scramble({ cards, showJa }: { cards: Card[]; showJa: boo
           <CardImage card={card} />
         </div>
         <div className="flex min-w-0 flex-1 flex-col justify-center gap-6">
-          <div className="flex flex-wrap justify-center gap-2" aria-label="Your answer" aria-live="polite">
-            {display.map((ch, k) =>
-              isTypeable(word[k]) ? (
-                <span
-                  key={k}
-                  className={cn(
-                    'grid h-16 w-12 place-items-center rounded-xl border-b-4 text-4xl font-black sm:h-20 sm:w-16 sm:text-5xl',
-                    solved
-                      ? 'border-success bg-success/10 text-success'
-                      : revealed
-                        ? 'border-amber-400 text-amber-600'
-                        : 'border-accent bg-accent-soft/60',
+          <div className="w-full [container-type:inline-size]">
+            <div
+              className="flex flex-wrap justify-center gap-x-[calc(var(--tile)*0.45)] gap-y-3"
+              style={tileRowStyle(tilesAcross(word))}
+              aria-label="Your answer"
+              aria-live="polite"
+            >
+              {wordGroups(word).map((g) => (
+                <span key={g[0]} className="flex gap-[0.4rem]">
+                  {g.map((k) =>
+                    isTypeable(word[k]) ? (
+                      <span
+                        key={k}
+                        className={cn(
+                          TILE,
+                          'rounded-xl border-b-4',
+                          solved
+                            ? 'border-success bg-success/10 text-success'
+                            : revealed
+                              ? 'border-amber-400 text-amber-600'
+                              : 'border-accent bg-accent-soft/60',
+                        )}
+                      >
+                        {display[k]}
+                      </span>
+                    ) : (
+                      <span key={k} className={cn(TILE, 'w-[calc(var(--tile)*0.4)] place-items-end')}>
+                        {display[k]}
+                      </span>
+                    ),
                   )}
-                >
-                  {ch}
                 </span>
-              ) : (
-                <span key={k} className="grid h-16 w-4 place-items-end text-4xl font-black sm:h-20">
-                  {ch === ' ' ? '' : ch}
-                </span>
-              ),
-            )}
+              ))}
+            </div>
           </div>
           <div className="min-h-10 text-center text-3xl font-black text-success">{solved && 'Correct! 🎉'}</div>
-          <div className="flex flex-wrap justify-center gap-2" aria-label="Letters">
-            {letters.map((l) => {
-              const used = answer.some((a) => a.id === l.id)
-              return (
-                <button
-                  key={l.id}
-                  type="button"
-                  disabled={used || solved}
-                  onClick={() => add(l)}
-                  className="grid h-16 w-14 place-items-center rounded-2xl bg-white text-4xl font-black shadow-md ring-1 ring-line transition-all hover:-translate-y-0.5 disabled:opacity-20 sm:h-20 sm:w-16"
-                >
-                  {l.char}
-                </button>
-              )
-            })}
+          <div className="w-full [container-type:inline-size]">
+            <div
+              className="flex flex-wrap justify-center gap-[0.4rem]"
+              style={tileRowStyle(Math.min(letters.length, 12), 4.5)}
+              aria-label="Letters"
+            >
+              {letters.map((l) => {
+                const used = answer.some((a) => a.id === l.id)
+                return (
+                  <button
+                    key={l.id}
+                    type="button"
+                    disabled={used || solved}
+                    onClick={() => add(l)}
+                    className={cn(
+                      TILE,
+                      'rounded-2xl bg-white shadow-md ring-1 ring-line transition-all hover:-translate-y-0.5 disabled:opacity-20',
+                    )}
+                  >
+                    {l.char}
+                  </button>
+                )
+              })}
+            </div>
           </div>
           {showJa && <Japanese card={card} className="text-2xl" />}
         </div>

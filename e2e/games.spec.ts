@@ -102,3 +102,50 @@ test('JHS Classroom Mode runs an exercise set', async ({ page }, info) => {
   await page.getByLabel('Search grammar').fill('word order')
   await expect(page.getByText('English Word Order')).toBeVisible()
 })
+
+// Every game with long words and phrases: words shrink to fit, never break or overflow.
+test('long words fit in every game, and flashcards never show the next word mid-flip', async ({ page }, info) => {
+  const { readFileSync } = await import('node:fs')
+  const deck = readFileSync('e2e/long-words.json', 'utf8')
+  await page.route('**/games/sets/pd-animals.json', (route) => route.fulfill({ contentType: 'application/json', body: deck }))
+
+  // Text boxes (FitText) and letter-tile rows must not be wider than their space.
+  const overflowing = () =>
+    page.evaluate(() => {
+      const bad: string[] = []
+      for (const box of document.querySelectorAll<HTMLElement>('[data-fit-text]')) {
+        const inner = box.firstElementChild as HTMLElement
+        if (box.offsetParent && inner.scrollWidth > box.clientWidth + 1) bad.push(`text: ${inner.textContent}`)
+      }
+      for (const row of document.querySelectorAll<HTMLElement>('[aria-label="Your answer"], [aria-label="Word"], [aria-label="Letters"]'))
+        if (row.scrollWidth > row.clientWidth + 1) bad.push(`tiles: ${row.getAttribute('aria-label')}`)
+      return bad
+    })
+
+  for (const mode of ['flashcards', 'quiz', 'cornerpop', 'reveal', 'scramble', 'spelling', 'missing', 'memory']) {
+    await page.goto(`./#/games?set=pd-animals&mode=${mode}`)
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Long words')
+    if (mode === 'flashcards') await page.getByRole('button', { name: 'Flip the card' }).click()
+    if (mode === 'reveal') await page.getByRole('button', { name: /Show/ }).first().click()
+    if (mode === 'spelling') await page.getByRole('button', { name: 'Show word' }).click()
+    if (mode === 'scramble') await page.getByRole('button', { name: 'Show word' }).click()
+    if (mode === 'memory') {
+      await page.getByRole('button', { name: 'Start game' }).click()
+      await page.getByRole('button', { name: 'Hidden card' }).first().click()
+    }
+    await page.waitForTimeout(700)
+    expect(await overflowing(), mode).toEqual([])
+    await page.screenshot({ path: `test-results/shots/long-${mode}-${info.project.name}.png` })
+  }
+
+  // Flashcards: going on from a flipped card turns it back before the next word loads.
+  await page.goto('./#/games?set=pd-animals&mode=flashcards')
+  await page.getByRole('button', { name: 'Flip the card' }).click()
+  const flipped = page.getByRole('button', { name: /\. Show the picture$/ })
+  const first = (await flipped.getAttribute('aria-label'))!.replace('. Show the picture', '')
+  await page.getByRole('button', { name: 'Next card' }).click()
+  await expect(page.getByText(`1 / 7`)).toBeVisible()
+  await expect(page.locator('[data-fit-text]').first()).toHaveText(first)
+  await expect(page.getByText(`2 / 7`)).toBeVisible()
+  await expect(page.locator('[data-fit-text]').first()).not.toHaveText(first)
+})

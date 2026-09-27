@@ -1,0 +1,49 @@
+{
+  "id": "pd-animals",
+  "title": "Long words",
+  "group": "Picture Dictionary",
+  "cards": [
+    {
+      "en": "nursery school teacher",
+      "ja": "保育士",
+      "kana": "ほいくし",
+      "img": "jobs/jobs/nursery-school-teacher.webp"
+    },
+    {
+      "en": "kindergarten teacher",
+      "ja": "幼稚園の先生",
+      "kana": "ようちえんのせんせい",
+      "img": "jobs/jobs/kindergarten-teacher.webp"
+    },
+    {
+      "en": "rock-paper-scissors",
+      "ja": "じゃんけん",
+      "kana": "",
+      "img": "activities/rock-paper-scissors.webp"
+    },
+    {
+      "en": "playing the recorder",
+      "ja": "リコーダーを吹く",
+      "kana": "りこーだーをふく",
+      "img": "activities/activities/playing-the-recorder.webp"
+    },
+    {
+      "en": "twenty-seventh",
+      "ja": "二十七日",
+      "kana": "にじゅうしちにち",
+      "img": "dates/twenty-seventh.webp"
+    },
+    {
+      "en": "cherry blossom viewing",
+      "ja": "花見",
+      "kana": "はなみ",
+      "img": "annual-events/cherry-blossom-viewing.webp"
+    },
+    {
+      "en": "take out the garbage",
+      "ja": "ゴミを出す",
+      "kana": "",
+      "img": "daily-life/take-out-the-garbage.webp"
+    }
+  ]
+}

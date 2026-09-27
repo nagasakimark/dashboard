@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight, Eye, Sparkles } from 'lucide-react'
 import { withImages, type Card } from '../data'
 import { shuffle } from '../engine'
+import { FitText } from '../FitText'
 import { BigButton, CardImage, Japanese, NotEnough } from '../ui'
 
 const COLS = 5
@@ -57,7 +58,7 @@ export default function PictureReveal({ cards, showJa }: { cards: Card[]; showJa
       <div className="flex min-h-16 flex-col items-center" aria-live="polite">
         {answer ? (
           <>
-            <span className="text-[clamp(2rem,5vw,4rem)] leading-none font-black">{card.en}</span>
+            <FitText text={card.en} max={64} min={18} className="max-w-3xl font-black" />
             {showJa && <Japanese card={card} className="mt-1 text-2xl" />}
           </>
         ) : (

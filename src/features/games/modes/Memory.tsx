@@ -3,6 +3,7 @@ import { PartyPopper, Play, RotateCcw } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import type { Card } from '../data'
 import { memoryCards, shuffle } from '../engine'
+import { FitText } from '../FitText'
 import { BigButton, CardImage, NotEnough } from '../ui'
 import { CardPicker } from './CardPicker'
 
@@ -140,12 +141,14 @@ export default function Memory({ cards }: { cards: Card[] }) {
                     {t.face === 'image' ? (
                       <CardImage card={t.card} />
                     ) : (
-                      <span
-                        className="text-center text-[clamp(1rem,2.4vw,2rem)] leading-tight font-black"
+                      <FitText
+                        text={t.face === 'japanese' ? t.card.ja || t.card.en : t.card.en}
                         lang={t.face === 'japanese' ? 'ja' : undefined}
-                      >
-                        {t.face === 'japanese' ? t.card.ja || t.card.en : t.card.en}
-                      </span>
+                        max={32}
+                        min={10}
+                        lines={3}
+                        className="px-1 font-black"
+                      />
                     )}
                   </span>
                 </span>

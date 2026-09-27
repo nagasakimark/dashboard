@@ -3,6 +3,7 @@ import { EyeOff, Play, RotateCcw, Search } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import type { Card } from '../data'
 import { shuffle } from '../engine'
+import { FitText } from '../FitText'
 import { BigButton, CardImage, NotEnough } from '../ui'
 import { CardPicker } from './CardPicker'
 
@@ -130,7 +131,7 @@ export default function Missing({ cards }: { cards: Card[] }) {
                 <div className="min-h-0 flex-1 p-2">
                   <CardImage card={c} />
                 </div>
-                <div className="truncate px-2 pb-2 text-center text-[clamp(1rem,2.2vw,1.75rem)] font-black">{c.en}</div>
+                <FitText text={c.en} max={28} min={10} lines={1} className="px-2 pb-2 font-black" />
               </div>
             )
           })}
