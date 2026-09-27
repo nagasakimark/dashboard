@@ -9,9 +9,12 @@ beforeEach(async () => {
 })
 
 describe('textbook presets', () => {
-  it('ship page-ordered sections for New Horizon 1–3 (2025)', () => {
-    expect(TEXTBOOK_PRESETS.map((p) => p.id)).toEqual(['nh1-2025', 'nh2-2025', 'nh3-2025'])
-    for (const p of TEXTBOOK_PRESETS) {
+  it('ship page-ordered sections for New Horizon 1–3 (2025) and units for Elementary 5–6', () => {
+    expect(TEXTBOOK_PRESETS.map((p) => p.id)).toEqual(['nh1-2025', 'nh2-2025', 'nh3-2025', 'nh5-es', 'nh6-es'])
+    for (const p of TEXTBOOK_PRESETS.filter((x) => x.sectionKind === 'units')) {
+      expect(p.sections.map((s) => s.title.split(':')[0])).toEqual(Array.from({ length: 8 }, (_, i) => `Unit ${i + 1}`))
+    }
+    for (const p of TEXTBOOK_PRESETS.filter((x) => x.sectionKind === 'pages')) {
       expect(p.sections.length).toBeGreaterThan(30)
       const pages = p.sections.map((s) => s.page)
       expect(pages).toEqual([...pages].sort((a, b) => a - b))
@@ -24,6 +27,10 @@ describe('textbook presets', () => {
     expect(suggestPreset('New Horizon 1 - G5060')?.id).toBe('nh1-2025')
     expect(suggestPreset('NEW HORIZON 3')?.id).toBe('nh3-2025')
     expect(suggestPreset('Blue Sky')).toBeUndefined()
+    expect(suggestPreset('NH5')?.id).toBe('nh5-es')
+    expect(suggestPreset('New Horizon Elementary 6')?.id).toBe('nh6-es')
+    expect(suggestPreset('New Horizon 5 (ES)')?.id).toBe('nh5-es')
+    expect(suggestPreset('New Horizon 4')).toBeUndefined()
   })
 
   it('creates a textbook from a preset, and fills an existing one without duplicates', async () => {

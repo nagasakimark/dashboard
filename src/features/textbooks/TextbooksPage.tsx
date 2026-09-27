@@ -112,7 +112,7 @@ function AddTextbookDialog({ existing, onClose }: { existing: Textbook[]; onClos
         value={tab}
         onChange={setTab}
         items={[
-          { id: 'preset', label: 'New Horizon (2025)', icon: BookPlus },
+          { id: 'preset', label: 'New Horizon', icon: BookPlus },
           { id: 'custom', label: 'Other textbook', icon: BookOpen },
         ]}
       />
@@ -129,7 +129,9 @@ function AddTextbookDialog({ existing, onClose }: { existing: Textbook[]; onClos
               >
                 <TextbookCover book={{ title: p.title, cover: '' }} className="mb-3" />
                 <p className="font-semibold text-ink">{p.title}</p>
-                <p className="text-xs text-ink-faint">{p.sections.length} key-sentence pages</p>
+                <p className="text-xs text-ink-faint">
+                  {p.sections.length} {p.sectionKind === 'units' ? 'units' : 'key-sentence pages'}
+                </p>
                 {have.has(p.id) && (
                   <Badge tone="success" className="mt-2">
                     <Check size={12} /> Added
@@ -143,7 +145,8 @@ function AddTextbookDialog({ existing, onClose }: { existing: Textbook[]; onClos
             <a className="underline" href="https://www.altopedia.net/jhs" target="_blank" rel="noreferrer">
               ALTopedia
             </a>
-            , with a link to each page’s activities. Already have one of these textbooks? Open it and use “Fill sections from preset”.
+            , with a link to each page’s activities. Elementary 5 and 6 are listed by unit. Already have one of these textbooks? Open it and
+            use “Fill sections from preset”.
           </p>
         </div>
       ) : (

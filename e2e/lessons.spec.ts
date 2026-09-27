@@ -21,6 +21,18 @@ test('adds a New Horizon preset and fills an existing textbook', async ({ page }
   await dialog.getByRole('button', { name: 'Add textbook' }).click()
   await page.getByRole('button', { name: 'Fill sections' }).click()
   await expect(page.getByText(/Added \d+ sections/)).toBeVisible()
+
+  // Elementary books are recognised too, and filled by unit.
+  await page.goto('./#/textbooks')
+  await page.getByRole('button', { name: /Add/ }).first().click()
+  await page.getByRole('tab', { name: 'Other textbook' }).click()
+  await dialog.getByLabel('Title').fill('NH5')
+  await dialog.getByRole('button', { name: 'Add textbook' }).click()
+  await expect(page.getByText(/Fill in all 8 units/)).toBeVisible()
+  await page.getByRole('button', { name: 'Fill sections' }).click()
+  await expect(page.getByText('Added 8 sections.')).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Unit 2: Happy Birthday/ })).toBeVisible()
+  await expect(page.getByText('p.0')).toHaveCount(0)
 })
 
 test('writes a lesson plan with autosave, tags and printing', async ({ page }, info) => {

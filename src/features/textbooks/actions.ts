@@ -53,10 +53,15 @@ export async function fillFromPreset(textbookId: string, presetId: string): Prom
   return addSections(textbookId, preset.sections)
 }
 
-/** Guess a preset for a textbook title such as "New Horizon 1 - G5060". */
+/**
+ * Guess a preset for a textbook title such as "New Horizon 1 - G5060",
+ * "NH5" or "New Horizon Elementary 6".
+ */
 export function suggestPreset(title: string): TextbookPreset | undefined {
-  const m = /new\s*horizon\s*([123])/i.exec(title)
-  return m ? presetById(`nh${m[1]}-2025`) : undefined
+  const m = /(?:new\s*horizon|\bnh)\s*(?:elementary\s*|english\s*course\s*)?([1-6])(?!\d)/i.exec(title)
+  if (!m) return undefined
+  const n = Number(m[1])
+  return n <= 3 ? presetById(`nh${n}-2025`) : n >= 5 ? presetById(`nh${n}-es`) : undefined
 }
 
 /**

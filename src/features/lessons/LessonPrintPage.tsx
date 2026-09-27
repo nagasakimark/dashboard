@@ -7,6 +7,7 @@ import { RichTextView } from '@/components/editor/RichTextView'
 import { Button, Spinner } from '@/components/ui'
 import { db } from '@/data/db'
 import { useSettings } from '@/data/settings'
+import { pageRef } from '@/features/textbooks/format'
 
 /** Clean A4 print layout for one or more lesson plans. */
 export default function LessonPrintPage() {
@@ -64,7 +65,7 @@ export default function LessonPrintPage() {
               {book && (
                 <span>
                   {book.title}
-                  {section ? `, p.${section.page}: ${section.title}` : ''}
+                  {section ? `, ${[pageRef(section.page), section.title].filter(Boolean).join(': ')}` : ''}
                 </span>
               )}
               {plan.tags.length > 0 && <span>{plan.tags.map((t) => `#${t}`).join(' ')}</span>}

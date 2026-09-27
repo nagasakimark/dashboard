@@ -4,6 +4,9 @@
  * retrieved 2026-09-27. Each entry is a key-sentence page with its grammar
  * tag and a link to that page's ALTopedia activities. ALTopedia doesn't
  * record unit names, so sections are listed by page rather than by unit.
+ *
+ * New Horizon Elementary 5 and 6 are listed by unit (page 0), with the unit
+ * names the old dashboard's word sets used and each unit's target language.
  */
 
 export interface PresetSection {
@@ -21,8 +24,12 @@ export interface TextbookPreset {
   /** School year (grade) within the level. */
   year: number
   altopediaUrl: string
+  /** Whether sections are key-sentence pages or whole units (no page numbers). */
+  sectionKind: 'pages' | 'units'
   sections: PresetSection[]
 }
+
+const unit = (n: number, title: string, topic: string): PresetSection => ({ page: 0, title: `Unit ${n}: ${title}`, topic, altopediaUrl: '' })
 
 export const TEXTBOOK_PRESETS: TextbookPreset[] = [
   {
@@ -31,6 +38,7 @@ export const TEXTBOOK_PRESETS: TextbookPreset[] = [
     publisher: 'Tokyo Shoseki',
     level: 'JHS',
     year: 1,
+    sectionKind: 'pages',
     altopediaUrl: 'https://www.altopedia.net/textbooks/77-new-horizon-1-2025',
     sections: [
       {
@@ -383,6 +391,7 @@ export const TEXTBOOK_PRESETS: TextbookPreset[] = [
     publisher: 'Tokyo Shoseki',
     level: 'JHS',
     year: 2,
+    sectionKind: 'pages',
     altopediaUrl: 'https://www.altopedia.net/textbooks/78-new-horizon-2-2025',
     sections: [
       {
@@ -681,6 +690,7 @@ export const TEXTBOOK_PRESETS: TextbookPreset[] = [
     publisher: 'Tokyo Shoseki',
     level: 'JHS',
     year: 3,
+    sectionKind: 'pages',
     altopediaUrl: 'https://www.altopedia.net/textbooks/79-new-horizon-3-2025',
     sections: [
       {
@@ -923,6 +933,44 @@ export const TEXTBOOK_PRESETS: TextbookPreset[] = [
         topic: 'Unit or Year Review',
         altopediaUrl: 'https://www.altopedia.net/textbook_pages/3536',
       },
+    ],
+  },
+  {
+    id: 'nh5-es',
+    title: 'New Horizon Elementary 5',
+    publisher: 'Tokyo Shoseki',
+    level: 'ES',
+    year: 5,
+    sectionKind: 'units',
+    altopediaUrl: '',
+    sections: [
+      unit(1, 'Hello, friends!', 'Introductions, the alphabet · How do you spell it?'),
+      unit(2, 'Happy Birthday', 'Months and dates · When is your birthday?'),
+      unit(3, 'Can you play dodgeball?', 'Can / can’t · Can you …?'),
+      unit(4, 'Who is this?', 'He / she is … · Who is this?'),
+      unit(5, 'Let’s go to the zoo.', 'Directions and places · Where is …?'),
+      unit(6, 'At a restaurant.', 'Ordering food · What would you like?'),
+      unit(7, 'Welcome to Japan!', 'Seasons and events · In spring, we have …'),
+      unit(8, 'Who is your hero?', 'He / she is good at … · Who is your hero?'),
+    ],
+  },
+  {
+    id: 'nh6-es',
+    title: 'New Horizon Elementary 6',
+    publisher: 'Tokyo Shoseki',
+    level: 'ES',
+    year: 6,
+    sectionKind: 'units',
+    altopediaUrl: '',
+    sections: [
+      unit(1, 'This is me!', 'Self-introductions · I’m from … / I like …'),
+      unit(2, 'My Daily Schedule', 'Daily routines and times · What time do you …?'),
+      unit(3, 'My Weekend', 'Past tense · I went to … / It was …'),
+      unit(4, 'Let’s see the world.', 'Countries · Where do you want to go?'),
+      unit(5, 'Where is it from?', 'Food and origins · It’s from …'),
+      unit(6, 'Save the animals.', 'Animals and habitats · … live in …'),
+      unit(7, 'My Best Memory', 'School events · My best memory is …'),
+      unit(8, 'My Future, My Dream', 'Jobs · What do you want to be?'),
     ],
   },
 ]

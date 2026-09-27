@@ -39,13 +39,22 @@ import { patch, remove, save } from '@/data/repo'
 import type { Section, Textbook } from '@/data/schema'
 import { addSections, deleteTextbook, fillFromPreset, parseSectionsJson, presetById, suggestPreset } from './actions'
 import { TextbookCover } from './TextbookCover'
+import { bySectionOrder, pageRef, sectionLabel } from './format'
 
 export default function TextbookDetailPage() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
   const { toast, confirm } = useFeedback()
   const book = useLiveQuery(() => db.textbooks.get(id), [id])
-  const sections = useLiveQuery(() => db.sections.where('textbookId').equals(id).sortBy('page'), [id])
+  const sections = useLiveQuery(
+    () =>
+      db.sections
+        .where('textbookId')
+        .equals(id)
+        .toArray()
+        .then((l) => l.sort(bySectionOrder)),
+    [id],
+  )
   const planCounts = useLiveQuery(async () => {
     const m = new Map<string, number>()
     for (const p of await db.lessonPlans.where('textbookId').equals(id).toArray())
@@ -165,8 +174,8 @@ export default function TextbookDetailPage() {
             <Card className="flex flex-col gap-3 border-accent/30 bg-accent-soft/40 p-4 sm:flex-row sm:items-center">
               <Sparkles size={20} className="shrink-0 text-accent" aria-hidden />
               <p className="flex-1 text-sm text-ink">
-                This looks like <strong>{suggestion.title}</strong>. Fill in all {suggestion.sections.length} key-sentence pages from the
-                preset?
+                This looks like <strong>{suggestion.title}</strong>. Fill in all {suggestion.sections.length}{' '}
+                {suggestion.sectionKind === 'units' ? 'units' : 'key-sentence pages'} from the preset?
               </p>
               <Button
                 variant="primary"
@@ -225,7 +234,9 @@ export default function TextbookDetailPage() {
                       onClick={() => setSection(s)}
                       className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-canvas"
                     >
-                      <span className="w-12 shrink-0 pt-0.5 text-right text-sm font-bold text-ink-faint tabular-nums">p.{s.page}</span>
+                      <span className="w-12 shrink-0 pt-0.5 text-right text-sm font-bold text-ink-faint tabular-nums">
+                        {pageRef(s.page)}
+                      </span>
                       <span className="min-w-0 flex-1">
                         <span className="block font-medium text-ink">{s.title}</span>
                         {(s.topic || s.notes) && (
@@ -360,7 +371,7 @@ function FillDialog({ book, onClose, onDone }: { book: Textbook; onClose: () => 
           <Select id={id} value={presetId} onChange={(e) => setPresetId(e.target.value)}>
             {TEXTBOOK_PRESETS.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.title} ({p.sections.length} pages)
+                {p.title} ({p.sections.length} {p.sectionKind})
               </option>
             ))}
           </Select>
@@ -395,7 +406,7 @@ function SectionEditor({ book, section, onClose }: { book: Textbook; section: Se
   const newPlan = async () => {
     if (!section) return
     const plan = await save('lessonPlans', {
-      title: `${book.title.replace(/\s*\(\d{4}\)$/, '')} p.${section.page}: ${section.title}`,
+      title: `${book.title.replace(/\s*\(\d{4}\)$/, '')} ${[pageRef(section.page), section.title].filter(Boolean).join(': ')}`,
       schoolId: null,
       year: presetById(book.preset)?.year ?? null,
       textbookId: book.id,
@@ -411,7 +422,7 @@ function SectionEditor({ book, section, onClose }: { book: Textbook; section: Se
     <Dialog
       open
       onClose={onClose}
-      title={section ? `p.${section.page} · ${section.title}` : 'Add a section'}
+      title={section ? sectionLabel(section) : 'Add a section'}
       footer={
         <>
           {section && (

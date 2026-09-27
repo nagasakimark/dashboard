@@ -9,6 +9,7 @@ import { db } from '@/data/db'
 import { useSchoolMap } from '@/features/schedule/hooks'
 import { cn } from '@/lib/cn'
 import { allTags, emptyFilters, filterPlans, indexPlans, snippet, type PlanFilters } from './search'
+import { pageRef } from '@/features/textbooks/format'
 
 export default function LessonsPage() {
   const navigate = useNavigate()
@@ -173,7 +174,7 @@ export default function LessonsPage() {
                   {book && (
                     <Badge tone="accent">
                       <BookOpen size={11} /> {book.title.replace(/\s*\(\d{4}\)$/, '')}
-                      {section ? ` p.${section.page}` : ''}
+                      {section ? ` ${pageRef(section.page) || section.title.split(':')[0]}` : ''}
                     </Badge>
                   )}
                 </div>

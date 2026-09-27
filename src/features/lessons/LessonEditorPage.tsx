@@ -25,6 +25,7 @@ import type { LessonPlan, Resource } from '@/data/schema'
 import { useSchools } from '@/features/schedule/hooks'
 import { classLabel, fromIso } from '@/features/schedule/model'
 import { allTags } from './search'
+import { bySectionOrder, sectionLabel } from '@/features/textbooks/format'
 
 const MAX_FILE = 1_500_000
 
@@ -100,7 +101,14 @@ function Editor({ plan }: { plan: LessonPlan }) {
   const schools = useSchools()
   const textbooks = useLiveQuery(() => db.textbooks.orderBy('title').toArray(), [])
   const sections = useLiveQuery(
-    () => (draft.textbookId ? db.sections.where('textbookId').equals(draft.textbookId).sortBy('page') : []),
+    () =>
+      draft.textbookId
+        ? db.sections
+            .where('textbookId')
+            .equals(draft.textbookId)
+            .toArray()
+            .then((l) => l.sort(bySectionOrder))
+        : [],
     [draft.textbookId],
   )
   const tags = useLiveQuery(async () => allTags(await db.lessonPlans.toArray()), [])
@@ -292,7 +300,7 @@ function Editor({ plan }: { plan: LessonPlan }) {
                       <option value="">Whole textbook</option>
                       {sections?.map((s) => (
                         <option key={s.id} value={s.id}>
-                          p.{s.page} · {s.title}
+                          {sectionLabel(s)}
                         </option>
                       ))}
                     </Select>

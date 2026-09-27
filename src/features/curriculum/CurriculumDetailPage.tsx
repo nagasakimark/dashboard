@@ -63,6 +63,7 @@ import {
   trackedClasses,
   type TrackedClass,
 } from './model'
+import { bySectionOrder, pageRef, sectionLabel } from '@/features/textbooks/format'
 
 type Tab = 'items' | 'progress'
 
@@ -199,7 +200,7 @@ export default function CurriculumDetailPage() {
                       <span className="mt-0.5 flex flex-wrap gap-1.5">
                         {section && (
                           <Badge tone="accent">
-                            <BookOpen size={11} /> p.{section.page}
+                            <BookOpen size={11} /> {pageRef(section.page) || section.title.split(':')[0]}
                           </Badge>
                         )}
                         {plan && (
@@ -442,7 +443,14 @@ function ItemEditor({ item, textbookId, onClose }: { item: CurriculumItem; textb
   const currentSection = useLiveQuery(() => (item.sectionId ? db.sections.get(item.sectionId) : undefined), [item.sectionId])
   const effectiveBook = bookId ?? currentSection?.textbookId ?? null
   const sections = useLiveQuery(
-    () => (effectiveBook ? db.sections.where('textbookId').equals(effectiveBook).sortBy('page') : []),
+    () =>
+      effectiveBook
+        ? db.sections
+            .where('textbookId')
+            .equals(effectiveBook)
+            .toArray()
+            .then((l) => l.sort(bySectionOrder))
+        : [],
     [effectiveBook],
   )
   const plans = useLiveQuery(() => db.lessonPlans.orderBy('title').toArray(), [])
@@ -509,7 +517,7 @@ function ItemEditor({ item, textbookId, onClose }: { item: CurriculumItem; textb
                 <option value="">None</option>
                 {sections?.map((s) => (
                   <option key={s.id} value={s.id}>
-                    p.{s.page} · {s.title}
+                    {sectionLabel(s)}
                   </option>
                 ))}
               </Select>

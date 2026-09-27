@@ -1,6 +1,7 @@
 import { db } from '@/data/db'
 import { patch, remove, save, saveMany } from '@/data/repo'
 import { classKey, type ClassProgress, type Curriculum, type CurriculumItem, type School } from '@/data/schema'
+import { bySectionOrder, pageRef } from '@/features/textbooks/format'
 
 export interface TrackedClass {
   key: string
@@ -74,13 +75,13 @@ export type CurriculumDraft = Pick<Curriculum, 'name' | 'description' | 'textboo
 export async function createCurriculum(draft: CurriculumDraft, opts: { fromSections?: boolean } = {}): Promise<Curriculum> {
   const c = await save('curricula', draft)
   if (opts.fromSections && draft.textbookId) {
-    const sections = await db.sections.where('textbookId').equals(draft.textbookId).sortBy('page')
+    const sections = (await db.sections.where('textbookId').equals(draft.textbookId).toArray()).sort(bySectionOrder)
     await saveMany(
       'curriculumItems',
       sections.map((s, order) => ({
         curriculumId: c.id,
         order,
-        text: `p.${s.page} ${s.title}`,
+        text: [pageRef(s.page), s.title].filter(Boolean).join(' '),
         sectionId: s.id,
         lessonPlanId: null,
         completed: false,
