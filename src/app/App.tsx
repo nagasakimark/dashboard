@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react'
 import { createHashRouter, Navigate, RouterProvider } from 'react-router'
 import { FeedbackProvider, Spinner } from '@/components/ui'
+import { useApplyAppearance } from '@/data/settings'
 import { AppShell } from './AppShell'
 import { PwaPrompts } from './PwaPrompts'
 import { RouteError } from './RouteError'
@@ -44,6 +45,7 @@ const router = createHashRouter([
 ])
 
 export default function App() {
+  useApplyAppearance()
   return (
     <FeedbackProvider>
       <RouterProvider router={router} />

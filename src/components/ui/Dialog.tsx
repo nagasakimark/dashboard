@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { IconButton } from './Button'
@@ -31,6 +31,8 @@ export interface DialogProps {
  */
 export function Dialog({ open, onClose, title, description, children, footer, size = 'md', dismissible = true, className }: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null)
+  const titleId = useId()
+  const descId = useId()
 
   useEffect(() => {
     const el = ref.current
@@ -42,6 +44,8 @@ export function Dialog({ open, onClose, title, description, children, footer, si
   return (
     <dialog
       ref={ref}
+      aria-labelledby={titleId}
+      aria-describedby={description ? descId : undefined}
       onCancel={(e) => {
         e.preventDefault()
         if (dismissible) onClose()
@@ -66,8 +70,14 @@ export function Dialog({ open, onClose, title, description, children, footer, si
           <div className="mx-auto mt-2 h-1.5 w-10 rounded-full bg-ink/12 sm:hidden" aria-hidden />
           <header className="flex items-start gap-3 px-5 pt-4 pb-3 sm:px-6 sm:pt-5">
             <div className="min-w-0 flex-1">
-              <h2 className="text-lg font-semibold text-ink">{title}</h2>
-              {description && <p className="mt-0.5 text-sm text-ink-soft">{description}</p>}
+              <h2 id={titleId} className="text-lg font-semibold text-ink">
+                {title}
+              </h2>
+              {description && (
+                <p id={descId} className="mt-0.5 text-sm text-ink-soft">
+                  {description}
+                </p>
+              )}
             </div>
             {dismissible && <IconButton icon={X} label="Close" size="sm" onClick={onClose} className="-mr-1" />}
           </header>

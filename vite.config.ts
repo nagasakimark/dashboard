@@ -1,4 +1,5 @@
 /// <reference types="vitest/config" />
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
@@ -8,9 +9,11 @@ import { VitePWA } from 'vite-plugin-pwa'
 // The app is served from GitHub Pages under /dashboard/. Preview builds are
 // published to /dashboard/next/ by CI, which sets BASE_PATH.
 const base = process.env.BASE_PATH ?? '/dashboard/'
+const version = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version as string
 
 export default defineConfig({
   base,
+  define: { __APP_VERSION__: JSON.stringify(version) },
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
