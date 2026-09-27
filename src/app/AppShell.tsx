@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router'
 import { MoreHorizontal } from 'lucide-react'
 import { Dialog } from '@/components/ui'
 import { cn } from '@/lib/cn'
+import { SyncBadge } from '@/features/sync/SyncBadge'
 import { boardNav, plannerNav, type NavItem } from './nav'
 
 export function AppShell() {
@@ -67,6 +68,8 @@ function Sidebar() {
           </NavLink>
         ))}
       </nav>
+      <SyncBadge className="hidden lg:flex" />
+      <SyncBadge compact className="justify-center lg:hidden" />
     </aside>
   )
 }
@@ -115,6 +118,7 @@ function BottomBar() {
       </nav>
 
       <Dialog open={moreOpen} onClose={() => setMoreOpen(false)} title="More">
+        <SyncBadge className="mb-2 -ml-3" />
         <div className="grid grid-cols-2 gap-2 pb-2">
           {secondary.map((item) => (
             <NavLink

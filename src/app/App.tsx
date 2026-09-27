@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect } from 'react'
 import { createHashRouter, Navigate, RouterProvider } from 'react-router'
 import { FeedbackProvider, Spinner } from '@/components/ui'
 import { useApplyAppearance } from '@/data/settings'
+import { SyncProvider } from '@/features/sync/SyncProvider'
 import { AppShell } from './AppShell'
 import { PwaPrompts } from './PwaPrompts'
 import { RouteError } from './RouteError'
@@ -78,8 +79,10 @@ export default function App() {
   useApplyAppearance()
   return (
     <FeedbackProvider>
-      <RouterProvider router={router} />
-      <PwaPrompts />
+      <SyncProvider>
+        <RouterProvider router={router} />
+        <PwaPrompts />
+      </SyncProvider>
     </FeedbackProvider>
   )
 }

@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { db, type Backup } from './db'
+import { DATA_REPLACED, dataEvents } from './events'
 import { newId } from './repo'
 import { SYNCED_TABLES, syncedTables, type SyncedTable } from './schema'
 
@@ -111,6 +112,7 @@ export async function replaceAllData(file: ExportFile, reason = 'Before import')
     }
     await db.tombstones.clear()
   })
+  dataEvents.dispatchEvent(new Event(DATA_REPLACED))
   return backup
 }
 

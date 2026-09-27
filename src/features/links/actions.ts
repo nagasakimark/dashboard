@@ -16,8 +16,19 @@ export async function ensureActivities() {
   await setSetting('activitiesSeeded', true)
   const existing = (await db.bookmarks.toArray()).filter((b) => kindOf(b) === 'activity')
   if (existing.length) return
-  await restoreActivities()
+  // Fixed ids and time 0: every device seeds the same records, and any edit
+  // synced from another device wins over them.
+  await db.bookmarks.bulkPut(
+    DEFAULT_ACTIVITIES.map((a, i) => ({ ...a, id: activityId(a.url), kind: 'activity' as const, order: i, createdAt: 0, updatedAt: 0 })),
+  )
 }
+
+export const activityId = (url: string) =>
+  `activity-${url
+    .replace(/^https?:\/\/[^/]+\//, '')
+    .replace(/[^a-z0-9]+/gi, '-')
+    .replace(/^-|-$/g, '')
+    .toLowerCase()}`
 
 /** Add any default activity that's missing (matched by URL). */
 export async function restoreActivities(): Promise<number> {
@@ -27,7 +38,7 @@ export async function restoreActivities(): Promise<number> {
   const missing = DEFAULT_ACTIVITIES.filter((a) => !have.has(a.url.replace(/\/$/, '').toLowerCase()))
   await saveMany(
     'bookmarks',
-    missing.map((a, i) => ({ ...a, kind: 'activity' as const, order: start + i })),
+    missing.map((a, i) => ({ ...a, id: activityId(a.url), kind: 'activity' as const, order: start + i })),
   )
   return missing.length
 }

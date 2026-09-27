@@ -261,17 +261,18 @@ Whichever you pick, sync is **optional and off by default**. The app works fully
 - [x] Offline check automated (`e2e/offline.spec.ts`): after the app installs its service worker, the planner, the board and a game set used earlier all load with the network off
   - ⚠️ *For you:* a real-device check (install on your phone, airplane mode, open each part) is still worth doing once at the cutover
 
-### Phase 13 — Sync (Option A: Firebase + Google sign-in)
-- [ ] Turn on Google as a sign-in method in the Firebase project, and add `nagasakimark.github.io` to its allowed domains
-- [ ] Test sign-in with your Nagasaki City school account. If its admin blocks it, document that and use a personal Gmail account instead
-- [ ] Firestore with offline storage, one collection per table under `users/{uid}/…`
-- [ ] Security rules: each signed-in user can read and write only their own data
-- [ ] Sync covers everything, class rosters included (D4)
-- [ ] Records sync only when they change, and when the same record is edited on two devices, the most recent edit wins. Deleted records carry a marker so the deletion reaches the other devices too
-- [ ] Textbook covers are shrunk small enough to fit in a Firestore record
-- [ ] Background sync with a status indicator (synced / syncing / offline)
-- [ ] Settings: turn it on, sign in, "sync now", and sign out and remove cloud data
-- [ ] Test with the PC and your phone together
+### Phase 13 — Sync (Option A: Firebase + Google sign-in) ✅ code done (2026-09-27); ⚠️ needs your console steps and a two-device test
+- [ ] ⚠️ *You:* turn on Google as a sign-in method, add `nagasakimark.github.io` to the authorised domains, create the Firestore database (Tokyo) and publish [`firebase/firestore.rules`](firebase/firestore.rules). Exact steps: [`firebase/SETUP.md`](firebase/SETUP.md) §3
+- [ ] ⚠️ *You:* test sign-in with your Nagasaki City school account. If its admin blocks it, use a personal Gmail account (the steps say what the error looks like)
+- [x] Cloud storage: one Firestore document per record at `users/{uid}/{table}/{id}` (the record as JSON, so nested lists like groups sync safely). This device's database stays the source of truth and works offline; changes made offline are sent when the connection returns
+- [x] Security rules: each signed-in Google user can read and write only their own data (anonymous poll sessions can't); document shape is checked
+- [x] Sync covers everything, class rosters included (D4); only settings that describe one device (last screen, open workspace) stay local
+- [x] Records sync only when they change (pushes send what changed since the last push; pulls listen for what the server saw after a saved cursor), and **the most recent edit wins** per record. Deleted records carry a marker so deletions reach the other devices. Imports and backup restores make the cloud match (records restamped, cloud-only records deleted). Default records (first workspace, activities) have fixed ids and time 0, so a new device never overwrites or duplicates real data
+- [x] Textbook covers are already ≈300 px WebP (Phase 3), well inside a document; lesson-plan files that would push a record past ~900 KB stay on their device (reported in Settings)
+- [x] Background sync with a status indicator (Synced / Syncing / Offline / Sync problem) in the sidebar and the phone's **More** sheet
+- [x] Settings → Sync between devices: sign in with Google and turn on, "Sync now", "Turn off and sign out" (data stays), and "Sign out and remove cloud data". Signing in upgrades the board's anonymous poll session, so poll rooms stay yours
+- [x] Tests: the sync engine runs against a fake cloud with two "devices" (copying, newest-wins with clock skew, deletions, no echoes, device-only settings, cursors, import replacing the cloud). Firebase itself loads only when sync is on (the first-load budgets still pass)
+- [ ] ⚠️ *You:* test with the PC and your phone together (steps in SETUP.md §3 "Try it")
 
 ### Phase 14 — Launch
 - [ ] Run your real data through the preview at `/dashboard/next/`, and you review it

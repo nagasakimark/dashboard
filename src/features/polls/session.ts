@@ -58,8 +58,12 @@ export async function claimRoom(db: PollDb, preferred?: string | null): Promise<
   if (preferred && isRoomCode(preferred)) {
     const meta = (await db.get(`rooms/${preferred}/meta`)) as Meta | null
     if (isMine(db, meta)) {
-      await heartbeat(db, preferred)
-      return preferred
+      try {
+        await heartbeat(db, preferred)
+        return preferred
+      } catch {
+        // No longer ours to write (e.g. signed in as someone else): make a new room.
+      }
     }
   }
   void cleanUpStaleRooms(db)

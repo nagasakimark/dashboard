@@ -1,6 +1,6 @@
 # ALT Dashboard: handoff guide for Claude
 
-A full rebuild of the user's classroom dashboard + ALT Planner as one PWA on GitHub Pages. **Phases 0–12 are done. Start at Phase 13.** The checklist is `docs/OVERHAUL_PLAN.md`: tick boxes as work lands, mark each phase ✅ with the date, and commit the plan with the phase.
+A full rebuild of the user's classroom dashboard + ALT Planner as one PWA on GitHub Pages. **Phases 0–13 are done in code (Phase 13 waits on the user's Firebase console steps and a two-device test). Start at Phase 14.** The checklist is `docs/OVERHAUL_PLAN.md`: tick boxes as work lands, mark each phase ✅ with the date, and commit the plan with the phase.
 
 ## Where things are
 - **This repo, branch `app`:** source code. Work and push here.
@@ -70,7 +70,12 @@ E2E tests take screenshots into `test-results/shots/`; look at them to check the
 - `src/features/games/` (modes in `modes/`, lazy) and `src/features/jhs/`. Built-in data is static under `public/games/` (sets, img, jhs) with a bundled index in `src/content/games/sets.json`; regenerate with `node scripts/legacy/extract-vocab.mjs && node scripts/legacy/extract-jhs.mjs && python3 scripts/legacy/convert-images.py` (needs Pillow and the `legacy-v1` tag).
 - Custom sets live in the `vocabSets` table (Dexie v2).
 
-## Next up: Phase 13 (sync)
-Firebase Auth (Google) + Firestore, per the plan and the "Sync" decision above. Anonymous sign-in already exists for polls (`src/features/polls/firebaseDb.ts`); console steps for the user go in `docs/firebase/SETUP.md`.
+## Sync (Phase 13) notes
+- `src/features/sync/`: `engine.ts` (pure, tested with a fake cloud), `cloud.ts` (Firebase Auth + Firestore, lazy), `SyncProvider.tsx` (runs it when `localStorage['sync:enabled'] === '1'`), `SyncBadge.tsx`.
+- Anything that writes records must still go through `repo.ts` so `updatedAt` and tombstones are right; sync relies on them. Seeded defaults should use fixed ids and `updatedAt: 0`. Settings that describe one device go in `DEVICE_ONLY_SETTINGS`.
+- Whole-database replaces must go through `replaceAllData` (it fires `DATA_REPLACED`, which makes the cloud match).
 
-Then Phase 14 per the plan.
+## Next up: Phase 14 (launch)
+Needs the user: a review of the preview with real data, then the cutover (`/dashboard/` → new app, old build kept at `/dashboard/legacy/`), a user guide, and tidying `archive/` in `alt-planner` together. Ask before switching `/dashboard/`.
+
+

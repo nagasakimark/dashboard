@@ -1,16 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '@/data/db'
-import { patch, save } from '@/data/repo'
+import { patch } from '@/data/repo'
 import type { Widget, Workspace } from '@/data/schema'
 import { useSettings } from '@/data/settings'
 import { sanitizeWidgets } from './model'
 
 const SAVE_DELAY = 400
 
-/** Create the first workspace (fixed id, so a double call is harmless). */
+/**
+ * Create the first workspace. Fixed id and time 0, so a double call is
+ * harmless and a synced workspace from another device always wins over it.
+ */
 export const ensureDefaultWorkspace = () =>
-  save('workspaces', { id: 'workspace-1', name: 'Workspace 1', order: 0, widgets: [], background: 0 })
+  db.workspaces.put({ id: 'workspace-1', name: 'Workspace 1', order: 0, widgets: [], background: 0, createdAt: 0, updatedAt: 0 })
 
 /** Workspaces in order, the active one, and a way to switch. */
 export function useWorkspaces() {

@@ -50,3 +50,11 @@ test('rejects files it does not recognise', async ({ page }) => {
   await expect(page.getByText('This can’t be imported')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Replace my data with this' })).toHaveCount(0)
 })
+
+test('sync is off by default and offers Google sign-in', async ({ page }) => {
+  await page.goto('./#/settings')
+  const card = page.locator('#sync')
+  await expect(card.getByRole('heading', { name: 'Sync between devices' })).toBeVisible()
+  await expect(card.getByRole('button', { name: 'Sign in with Google and turn on sync' })).toBeVisible()
+  await expect(page.getByRole('link', { name: /^Sync:/ })).toHaveCount(0)
+})

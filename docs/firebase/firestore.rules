@@ -1,0 +1,26 @@
+rules_version = '2';
+
+// Sync (Phase 13): each signed-in Google user can read and write only their
+// own tree, users/{uid}/{table}/{recordId}. Everything else is closed.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid}/{table}/{recordId} {
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['data', 'updatedAt', 'deleted', 'serverAt'])
+        && request.resource.data.updatedAt is number
+        && request.resource.data.deleted is bool
+        && (request.resource.data.data == null || request.resource.data.data is string);
+    }
+
+    function isOwner(uid) {
+      return request.auth != null
+        && request.auth.uid == uid
+        && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
