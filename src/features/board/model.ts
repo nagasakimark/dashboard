@@ -63,6 +63,16 @@ export const WIDGET_META: WidgetMeta[] = [
     scaleContent: false,
   }),
   meta({ type: 'Scoreboard', category: 'students', description: 'Team scores', w: 260, h: 220, minW: 200, minH: 160, scaleContent: false }),
+  meta({
+    type: 'Poll',
+    category: 'interact',
+    description: 'Live poll students join by QR code',
+    w: 360,
+    h: 480,
+    minW: 280,
+    minH: 340,
+    scaleContent: false,
+  }),
   meta({ type: 'Dice', category: 'fun', description: 'Roll 1–6 dice', w: 220, h: 248, minW: 160, minH: 172 }),
   meta({ type: 'Spinner', category: 'fun', description: 'Spin the wheel', w: 360, h: 460, minW: 260, minH: 320, scaleContent: false }),
   meta({

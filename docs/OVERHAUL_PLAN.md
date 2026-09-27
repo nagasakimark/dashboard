@@ -230,11 +230,14 @@ Whichever you pick, sync is **optional and off by default**. The app works fully
 - [x] Keyboard shortcuts (N, D, [ ], B, H, F, Esc, ?, arrow keys on a title bar) and a projector mode that hides every control
 - [x] Backgrounds: the 4 gradients and 24 wallpapers from `legacy-v1`, converted to WebP (≈5.7 MB total, down from ≈60 MB) with thumbnails, cached offline on first use; daily rotation as before
 
-### Phase 9 — Live polls
-- [ ] Update the Firebase SDK and review the **database security rules** in the Firebase console (you have access, D3; I'll give you the exact rules to paste in, or you can let me in)
-- [ ] Teacher: poll builder, room code with QR, and live results (bar chart, pie chart, word cloud, rating, ranking), plus an archive and CSV export
-- [ ] Student page: `#/student` join flow, keeping the same URL so existing QR codes still work
-- [ ] Old rooms expire and get cleaned up automatically
+### Phase 9 — Live polls ✅ (2026-09-27)
+- [x] Firebase SDK updated to v12 (modular), loaded only when a poll opens. **Database security rules** written in [`firebase/database.rules.json`](firebase/database.rules.json), with the exact console steps in [`firebase/SETUP.md`](firebase/SETUP.md) (turn on anonymous sign-in, paste the rules). ⚠️ *Needs you:* those two console changes. Until then polls work the old, open way
+  - The board signs in anonymously so a room belongs to the board that made it; students don't sign in. Students can only add one vote at a time, only to the running poll, of the right type and length. Rooms from the old dashboard keep working until the cutover
+- [x] Teacher (the **Poll** widget on the board): poll builder (single, multiple with "Other", ranking, star rating 3–10, word cloud; allow re-voting), room code with a large QR ("Scan to join") and copy link, live results (bars, pie, word cloud, rating, average ranking), an archive of past polls, and CSV export (summary plus raw responses)
+  - The room code is kept with the widget, so it survives reloads (the old one changed every browser session); "New room code" replaces it
+- [x] Student page: `#/student` and `/dashboard/student?room=…` join flow (code check, waiting screen, all five ballot types with drag-or-arrows ranking on touch, "Vote submitted!", re-voting resets after 1.5 s, follows new questions), text stripped of HTML
+- [x] Old rooms expire: any room nobody has opened for 7 days is deleted by the next board that opens a poll (the rules allow only that)
+- [x] Tests run polls on a local backend (`localStorage.pollBackend = 'local'`), so e2e never touches the live database
 
 ### Phase 10 — Games and JHS Classroom Mode
 - [ ] Rebuild the 8 game modes on a shared game engine

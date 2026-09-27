@@ -33,9 +33,11 @@ test('classroom board opens full-screen and returns', async ({ page }) => {
 })
 
 test('student join page answers on the hash route', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('pollBackend', 'local'))
   await page.goto('./#/student?room=12345')
   await expect(page.getByRole('heading', { name: 'Join a poll' })).toBeVisible()
-  await expect(page.getByText('Room 12345.')).toBeVisible()
+  await expect(page.getByLabel('Room code')).toHaveValue('12345')
+  await expect(page.getByRole('alert')).toHaveText('That room code wasn’t found.')
 })
 
 test('web app manifest is served', async ({ request }) => {

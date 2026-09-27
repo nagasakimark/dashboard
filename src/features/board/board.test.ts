@@ -22,8 +22,8 @@ const w = (over: Partial<Widget>): Widget => ({
 })
 
 describe('widget registry', () => {
-  it('has all 15 board widgets with metadata and defaults', () => {
-    expect(WIDGET_META).toHaveLength(15)
+  it('has all 16 board widgets with metadata and defaults', () => {
+    expect(WIDGET_META).toHaveLength(16)
     for (const m of WIDGET_META) expect(WIDGETS.get(m.type)?.defaults).toBeTypeOf('object')
   })
 
@@ -51,9 +51,9 @@ describe('layout', () => {
   })
 
   it('clamps sizes but keeps unknown widget types', () => {
-    const out = sanitizeWidgets([w({ width: 10, height: 10 }), w({ id: 'p', type: 'Poll' })])
+    const out = sanitizeWidgets([w({ width: 10, height: 10 }), w({ id: 'p', type: 'Mystery' })])
     expect(out[0]).toMatchObject({ width: 160, height: 172 })
-    expect(out[1].type).toBe('Poll')
+    expect(out[1].type).toBe('Mystery')
   })
 
   it('pulls widgets saved on a bigger screen back onto the board', () => {

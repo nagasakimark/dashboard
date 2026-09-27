@@ -1,3 +1,5 @@
+import { emptyDraft, type PollDraft } from '@/features/polls/session'
+import type { ResultView } from '@/features/polls/model'
 import { emptySource, type NameSource } from '../rosters'
 
 /*
@@ -180,3 +182,11 @@ export interface QrConfig {
   caption: string
 }
 export const qrDefaults: QrConfig = { url: '', color: '#111827', caption: '' }
+
+export interface PollConfig {
+  /** Room code kept with the widget, so the same code works after a reload. */
+  room: string | null
+  draft: PollDraft
+  view: ResultView | null
+}
+export const pollDefaults: PollConfig = { room: null, draft: emptyDraft(), view: null }

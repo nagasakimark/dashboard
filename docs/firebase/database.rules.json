@@ -1,0 +1,44 @@
+{
+  "rules": {
+    "roomCodeHistory": {
+      "$code": {
+        ".read": true,
+        ".write": "$code.matches(/^[1-9][0-9]{4}$/) && (!data.exists() || !data.child('ownerUid').exists() || data.child('ownerUid').val() === auth.uid)"
+      }
+    },
+    "rooms": {
+      ".indexOn": ["meta/lastSeenAt"],
+      ".read": "query.orderByChild === 'meta/lastSeenAt' && query.endAt <= now - 604800000 && query.limitToFirst <= 20",
+      "$code": {
+        ".write": "$code.matches(/^[1-9][0-9]{4}$/) && (!data.exists() || !data.child('meta/ownerUid').exists() || data.child('meta/ownerUid').val() === auth.uid || (!newData.exists() && data.child('meta/lastSeenAt').val() < now - 604800000))",
+        "meta": {
+          ".read": true
+        },
+        "currentPoll": {
+          ".read": true,
+          "question": { ".validate": "newData.isString() && newData.val().length <= 300" }
+        },
+        "votes": {
+          "$pollId": {
+            ".read": true,
+            "$voteId": {
+              ".write": "!data.exists() && newData.exists() && root.child('rooms/' + $code + '/currentPoll/id').val() === $pollId && root.child('rooms/' + $code + '/currentPoll/status').val() === 'active'",
+              ".validate": "newData.child('type').val() === root.child('rooms/' + $code + '/currentPoll/type').val()",
+              "value": { ".validate": "(newData.isString() && newData.val().length <= 100) || newData.isNumber()" },
+              "customValue": { ".validate": "newData.isString() && newData.val().length <= 100" }
+            }
+          }
+        },
+        "archive": {
+          ".read": "!root.child('rooms/' + $code + '/meta/ownerUid').exists() || root.child('rooms/' + $code + '/meta/ownerUid').val() === auth.uid"
+        }
+      }
+    },
+    "archives": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    }
+  }
+}

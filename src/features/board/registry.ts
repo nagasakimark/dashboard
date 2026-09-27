@@ -14,6 +14,7 @@ import {
   UsersRound,
   CalendarClock,
   Watch,
+  Vote,
   LifeBuoy,
   type LucideIcon,
 } from 'lucide-react'
@@ -26,6 +27,7 @@ import Clock from './widgets/Clock'
 import Dice from './widgets/Dice'
 import Drawing from './widgets/Drawing'
 import GroupMaker from './widgets/GroupMaker'
+import Poll from './widgets/Poll'
 import QrCode from './widgets/QrCode'
 import RandomName from './widgets/RandomName'
 import Scoreboard from './widgets/Scoreboard'
@@ -56,6 +58,7 @@ const defs: AnyWidgetDef[] = [
   def('Random Name', Shuffle, C.randomNameDefaults, RandomName),
   def('Group Maker', UsersRound, C.groupMakerDefaults, GroupMaker),
   def('Scoreboard', Trophy, C.scoreboardDefaults, Scoreboard),
+  def('Poll', Vote, C.pollDefaults, Poll),
   def('Dice', Dices, C.diceDefaults, Dice),
   def('Spinner', LifeBuoy, C.spinnerDefaults, Spinner),
   def('Text', Type, C.textDefaults, Text),

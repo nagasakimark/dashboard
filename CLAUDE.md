@@ -1,6 +1,6 @@
 # ALT Dashboard: handoff guide for Claude
 
-A full rebuild of the user's classroom dashboard + ALT Planner as one PWA on GitHub Pages. **Phases 0–8 are done. Start at Phase 9.** The checklist is `docs/OVERHAUL_PLAN.md`: tick boxes as work lands, mark each phase ✅ with the date, and commit the plan with the phase.
+A full rebuild of the user's classroom dashboard + ALT Planner as one PWA on GitHub Pages. **Phases 0–9 are done. Start at Phase 10.** The checklist is `docs/OVERHAUL_PLAN.md`: tick boxes as work lands, mark each phase ✅ with the date, and commit the plan with the phase.
 
 ## Where things are
 - **This repo, branch `app`:** source code. Work and push here.
@@ -61,7 +61,11 @@ E2E tests take screenshots into `test-results/shots/`; look at them to check the
 - Unknown widget types are kept but not drawn (the old board's Poll widgets wait for Phase 9: add `Poll` to `WIDGET_META` and the registry).
 - `getByRole` names match substrings: "Scoreboard settings" also matches "Board settings", so use `exact: true`.
 
-## Next up: Phase 9 (live polls)
-See the plan. The Poll widget goes on the board, `src/components/QrSvg.tsx` draws QR codes, and the student page must keep answering at `/dashboard/student?room=12345`.
+## Polls (Phase 9) notes
+- `src/features/polls/`: `db.ts` is a tiny realtime-DB interface with a Firebase backend (`firebaseDb.ts`, lazy) and a local one (`localDb.ts`, used when `localStorage.pollBackend === 'local'`; all poll e2e tests use it). `session.ts` holds the room and poll logic, `model.ts` the results maths and CSV.
+- The rules are in `docs/firebase/`. The user has to apply them in the console by following `docs/firebase/SETUP.md`; ask whether they have before relying on anonymous-auth ownership.
 
-Then Phases 10–14 per the plan.
+## Next up: Phase 10 (games and JHS Classroom Mode)
+Extract the vocabulary sets and game rules from `GameModal-*.js` on `legacy-v1` (see "Old game and vocabulary code" above) and the JHS data from `docs/legacy/data/jhs-books.json`.
+
+Then Phases 11–14 per the plan.
