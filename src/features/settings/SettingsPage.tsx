@@ -5,6 +5,7 @@ import { Button, Card, CardHeader, Field, Input, Select } from '@/components/ui'
 import { useSettings } from '@/data/settings'
 import { useInstallPrompt } from '@/app/useInstallPrompt'
 import { cn } from '@/lib/cn'
+import { useDraft } from '@/lib/useDraft'
 import { DataSection } from './DataSection'
 
 const ACCENTS = ['#4f46e5', '#2563eb', '#0891b2', '#059669', '#65a30d', '#d97706', '#dc2626', '#db2777', '#9333ea', '#475569']
@@ -14,6 +15,7 @@ const DATE_FORMATS = ['d MMM yyyy', 'dd/MM/yyyy', 'MM/dd/yyyy', 'yyyy/MM/dd', 'y
 export default function SettingsPage() {
   const { settings, setSetting } = useSettings()
   const install = useInstallPrompt()
+  const [name, setName, flushName] = useDraft(settings.profileName, (v) => setSetting('profileName', v))
   const sample = new Date(2026, 8, 27)
 
   return (
@@ -26,9 +28,10 @@ export default function SettingsPage() {
               {(id) => (
                 <Input
                   id={id}
-                  value={settings.profileName}
+                  value={name}
                   placeholder="e.g. Alex Smith"
-                  onChange={(e) => setSetting('profileName', e.target.value)}
+                  onChange={(e) => setName(e.target.value)}
+                  onBlur={flushName}
                   autoComplete="name"
                 />
               )}

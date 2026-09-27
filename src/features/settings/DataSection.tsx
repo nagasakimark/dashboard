@@ -1,34 +1,21 @@
 import { useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { formatDistanceToNow } from 'date-fns'
-import { Archive, Database, Download, FileWarning, RotateCcw, Trash2, Upload } from 'lucide-react'
-import { Badge, Button, Card, CardHeader, Dialog, IconButton, Menu, useFeedback } from '@/components/ui'
+import { Archive, Database, DatabaseZap, Download, RotateCcw, Trash2, Upload } from 'lucide-react'
+import { Button, Card, CardHeader, IconButton, Menu, useFeedback } from '@/components/ui'
 import { db } from '@/data/db'
 import { SYNCED_TABLES } from '@/data/schema'
 import { buildExport, createBackup, downloadJson, exportFileName, replaceAllData, restoreBackup, type ExportFile } from '@/data/transfer'
 import { readImportFile, type ImportPlan } from '@/data/importFile'
-import { TABLE_LABELS } from '@/data/labels'
-
-function CountsList({ counts }: { counts: Record<string, number> }) {
-  const shown = Object.entries(counts).filter(([k, n]) => n > 0 && k !== 'settings')
-  if (!shown.length) return <p className="text-sm text-ink-faint">No records.</p>
-  return (
-    <dl className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm sm:grid-cols-3">
-      {shown.map(([k, n]) => (
-        <div key={k} className="flex justify-between gap-2 border-b border-line/60 py-1">
-          <dt className="text-ink-soft">{TABLE_LABELS[k] ?? k}</dt>
-          <dd className="font-semibold tabular-nums">{n.toLocaleString()}</dd>
-        </div>
-      ))}
-    </dl>
-  )
-}
+import { ImportDialog } from './ImportDialog'
+import { useLegacyImport } from './useLegacyImport'
 
 export function DataSection() {
   const { toast, confirm } = useFeedback()
   const fileInput = useRef<HTMLInputElement>(null)
   const [plan, setPlan] = useState<ImportPlan | null>(null)
   const [busy, setBusy] = useState(false)
+  const legacy = useLegacyImport()
   const backups = useLiveQuery(() => db.backups.orderBy('createdAt').reverse().toArray(), [])
 
   const undoable = (message: string, backupId: string) =>
@@ -56,19 +43,6 @@ export function DataSection() {
       setPlan(await readImportFile(await f.text(), f.name))
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Could not read that file.', { tone: 'error' })
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const applyImport = async (file: ExportFile) => {
-    setBusy(true)
-    try {
-      const backup = await replaceAllData(file, `Before importing ${plan?.fileName ?? 'a file'}`)
-      setPlan(null)
-      undoable('Import complete. Your previous data was backed up.', backup.id)
-    } catch (e) {
-      toast(`Import failed: ${e instanceof Error ? e.message : e}`, { tone: 'error' })
     } finally {
       setBusy(false)
     }
@@ -117,6 +91,11 @@ export function DataSection() {
               e.target.value = ''
             }}
           />
+          {legacy.available && (
+            <Button icon={DatabaseZap} onClick={legacy.review} disabled={legacy.loading}>
+              Import from old dashboard
+            </Button>
+          )}
           <Button variant="ghost" icon={Trash2} className="text-danger hover:text-danger sm:ml-auto" onClick={onReset}>
             Erase all data
           </Button>
@@ -190,67 +169,8 @@ export function DataSection() {
         </ul>
       </Card>
 
-      <Dialog
-        open={!!plan}
-        onClose={() => !busy && setPlan(null)}
-        dismissible={!busy}
-        size="lg"
-        title="Import data"
-        description={plan?.fileName}
-        footer={
-          plan?.file && (
-            <>
-              <Button variant="ghost" onClick={() => setPlan(null)} disabled={busy}>
-                Cancel
-              </Button>
-              <Button variant="primary" onClick={() => applyImport(plan.file!)} disabled={busy}>
-                {busy ? 'Importing…' : 'Replace my data with this file'}
-              </Button>
-            </>
-          )
-        }
-      >
-        {plan && (
-          <div className="space-y-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge tone="accent">{plan.formatLabel}</Badge>
-              {plan.file && <span className="text-sm text-ink-soft">This file contains:</span>}
-            </div>
-            {plan.file && <CountsList counts={plan.counts} />}
-
-            {plan.errors.length > 0 && (
-              <div className="rounded-xl border border-danger/25 bg-danger/5 p-3 text-sm text-danger">
-                <p className="flex items-center gap-2 font-semibold">
-                  <FileWarning size={16} aria-hidden /> This file can’t be imported
-                </p>
-                <ul className="mt-1 list-disc pl-5 text-xs">
-                  {plan.errors.slice(0, 8).map((e) => (
-                    <li key={e}>{e}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {plan.warnings.length > 0 && (
-              <div className="rounded-xl border border-warning/30 bg-warning/5 p-3 text-sm">
-                <p className="font-semibold text-warning">Worth checking after import</p>
-                <ul className="mt-1 list-disc pl-5 text-xs text-ink-soft">
-                  {plan.warnings.map((w) => (
-                    <li key={w}>{w}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {plan.file && (
-              <p className="rounded-xl bg-accent-soft p-3 text-sm text-accent-strong">
-                Importing <strong>replaces everything</strong> on this device. Your current data is backed up first, and you can undo right
-                after.
-              </p>
-            )}
-          </div>
-        )}
-      </Dialog>
+      <ImportDialog plan={plan} onClose={() => setPlan(null)} />
+      <ImportDialog plan={legacy.plan} onClose={legacy.close} title="Import from the old dashboard" confirmLabel="Import my data" />
     </>
   )
 }

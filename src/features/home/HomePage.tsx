@@ -2,6 +2,7 @@ import { Link } from 'react-router'
 import { ArrowRight, CalendarDays, Gamepad2, NotebookPen, Presentation, Vote } from 'lucide-react'
 import { Page } from '@/components/layout/Page'
 import { Card } from '@/components/ui'
+import { LegacyImportBanner } from './LegacyImportBanner'
 
 function greeting(date = new Date()) {
   const h = date.getHours()
@@ -37,6 +38,7 @@ export default function HomePage() {
   const today = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
   return (
     <Page title={greeting()} description={today}>
+      <LegacyImportBanner />
       <div className="grid gap-4 sm:grid-cols-2">
         {shortcuts.map((s) => (
           <Link key={s.label} to={s.to} className="group">

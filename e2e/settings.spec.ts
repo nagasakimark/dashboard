@@ -3,7 +3,10 @@ import { readFile } from 'node:fs/promises'
 
 test('accent colour persists across reloads', async ({ page }) => {
   await page.goto('./#/settings')
-  await page.getByRole('radio', { name: '#059669' }).click()
+  const green = page.getByRole('radio', { name: '#059669' })
+  await green.click()
+  // Wait until the saved setting has round-tripped through the database.
+  await expect(green).toHaveAttribute('aria-checked', 'true')
   await page.reload()
   await expect(page.getByRole('radio', { name: '#059669' })).toHaveAttribute('aria-checked', 'true')
   const accent = await page.evaluate(() => document.documentElement.style.getPropertyValue('--accent'))
@@ -23,6 +26,7 @@ test('export then import round-trips data with an undo', async ({ page }, info) 
 
   // Change the name, then import the earlier export to bring it back.
   await page.getByLabel('Your name').fill('Changed')
+  await expect(page.getByLabel('Your name')).toHaveValue('Changed')
   await page.locator('input[type=file]').setInputFiles({
     name: 'backup.json',
     mimeType: 'application/json',
@@ -30,7 +34,7 @@ test('export then import round-trips data with an undo', async ({ page }, info) 
   })
   const dialog = page.getByRole('dialog', { name: 'Import data' })
   await expect(dialog.getByText('ALT Dashboard export')).toBeVisible()
-  await dialog.getByRole('button', { name: 'Replace my data with this file' }).click()
+  await dialog.getByRole('button', { name: 'Replace my data with this' }).click()
   await expect(page.getByText('Import complete')).toBeVisible()
   await expect(page.getByLabel('Your name')).toHaveValue('Alex Smith')
 
@@ -43,6 +47,6 @@ test('export then import round-trips data with an undo', async ({ page }, info) 
 test('rejects files it does not recognise', async ({ page }) => {
   await page.goto('./#/settings')
   await page.locator('input[type=file]').setInputFiles({ name: 'x.json', mimeType: 'application/json', buffer: Buffer.from('{"hello":1}') })
-  await expect(page.getByText('This file can’t be imported')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Replace my data with this file' })).toHaveCount(0)
+  await expect(page.getByText('This can’t be imported')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Replace my data with this' })).toHaveCount(0)
 })
