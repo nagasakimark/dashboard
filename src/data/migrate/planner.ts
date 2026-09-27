@@ -53,7 +53,8 @@ export function plannerVariant(json: Json): 'dashboard' | 'original' {
 const SCHOOL_COLORS = ['#4f46e5', '#059669', '#d97706', '#db2777', '#0891b2', '#7c3aed']
 const KEY_RE = /^(\d{4}-\d{2}-\d{2})-([A-Za-z]+)(?:-(\d+|lunch))?$/
 /** Legacy "Other" periods whose summary is really a type of work. */
-const PROMOTED_SPECIALS = new Set(['Lesson Planning', 'Marking'])
+const PROMOTED_SPECIALS: Record<string, string> = { 'lesson planning': 'Lesson Planning', marking: 'Marking' }
+const promotedType = (summary: string) => PROMOTED_SPECIALS[summary.trim().replace(/\.$/, '').toLowerCase()]
 
 export function convertPlanner(json: Json, now = Date.now()): ConversionResult<PlannerData> {
   const warnings: string[] = []
@@ -169,8 +170,8 @@ export function convertPlanner(json: Json, now = Date.now()): ConversionResult<P
     let summary = str(value.summary ?? value.note)
     const isClass = !special && value.type !== 'special' && value.type !== 'other' && !!year && !!classNumber
     if (!isClass && !special) special = 'Other'
-    if (special === 'Other' && PROMOTED_SPECIALS.has(summary.trim())) {
-      special = summary.trim()
+    if (special === 'Other' && promotedType(summary)) {
+      special = promotedType(summary)
       summary = ''
       promoted++
     }

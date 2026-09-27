@@ -1,13 +1,273 @@
-import { CalendarDays } from 'lucide-react'
-import { ComingSoon } from '@/components/layout/ComingSoon'
+import { lazy, Suspense, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router'
+import {
+  addDays,
+  addMonths,
+  addWeeks,
+  addYears,
+  endOfMonth,
+  endOfWeek,
+  endOfYear,
+  format,
+  isValid,
+  startOfMonth,
+  startOfWeek,
+  startOfYear,
+} from 'date-fns'
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  FileText,
+  Grid3x3,
+  MoreVertical,
+  Rows3,
+  BarChart3,
+  School as SchoolIcon,
+} from 'lucide-react'
+import { Link } from 'react-router'
+import { Page } from '@/components/layout/Page'
+import { Button, Card, EmptyState, IconButton, Menu, Spinner, Tabs, useFeedback } from '@/components/ui'
+import { useSettings } from '@/data/settings'
+import { useIsDesktop } from '@/lib/useMediaQuery'
+import { copyDay, type Undo } from './actions'
+import { AgendaView } from './AgendaView'
+import { DayEditor } from './DayEditor'
+import { useLessonPlanMap, useScheduleRange, useSchools } from './hooks'
+import { fromIso, iso, isWeekend, weekDays } from './model'
+import { MonthView, YearView } from './MonthYearViews'
+import { PeriodEditor, type PeriodTarget } from './PeriodEditor'
+import { TallyView } from './TallyView'
+import { WeekView } from './WeekView'
+
+const ReportDialog = lazy(() => import('./report/ReportDialog'))
+
+type View = 'week' | 'month' | 'year' | 'tally'
+const VIEWS: View[] = ['week', 'month', 'year', 'tally']
 
 export default function SchedulePage() {
+  const [params, setParams] = useSearchParams()
+  const { settings } = useSettings()
+  const { toast } = useFeedback()
+  const isDesktop = useIsDesktop()
+  const weekStartsOn = settings.weekStartsOn
+
+  const view: View = VIEWS.includes(params.get('v') as View) ? (params.get('v') as View) : 'week'
+  const dParam = params.get('d')
+  const anchor = useMemo(() => {
+    const parsed = dParam ? fromIso(dParam) : new Date()
+    return isValid(parsed) ? parsed : new Date()
+  }, [dParam])
+  const go = (next: { v?: View; d?: Date }) =>
+    setParams(
+      (p) => {
+        if (next.v) p.set('v', next.v)
+        if (next.d) p.set('d', iso(next.d))
+        return p
+      },
+      { replace: !next.v },
+    )
+
+  // Range to load for the current view.
+  const [from, to] = useMemo(() => {
+    if (view === 'year') return [iso(startOfYear(anchor)), iso(endOfYear(anchor))]
+    if (view === 'month')
+      return [iso(startOfWeek(startOfMonth(anchor), { weekStartsOn })), iso(endOfWeek(endOfMonth(anchor), { weekStartsOn }))]
+    return [iso(startOfWeek(anchor, { weekStartsOn })), iso(endOfWeek(anchor, { weekStartsOn }))]
+  }, [view, anchor, weekStartsOn])
+
+  const schools = useSchools()
+  const schoolMap = useMemo(() => new Map((schools ?? []).map((s) => [s.id, s])), [schools])
+  const range = useScheduleRange(from, to)
+  const plans = useLessonPlanMap()
+
+  const [periodTarget, setPeriodTarget] = useState<PeriodTarget | null>(null)
+  const [dayTarget, setDayTarget] = useState<string | null>(null)
+  const [reportOpen, setReportOpen] = useState(false)
+
+  const onUndoable = (message: string, undo: Undo) =>
+    toast(message, {
+      tone: 'success',
+      action: {
+        label: 'Undo',
+        onClick: async () => {
+          await undo()
+          toast('Undone.')
+        },
+      },
+    })
+
+  // Show the weekend only when something is scheduled on it.
+  const days = useMemo(() => {
+    const all = weekDays(anchor, weekStartsOn, true)
+    const used = (d: Date) => range?.days.has(iso(d)) || range?.periodList.some((p) => p.date === iso(d))
+    return all.filter((d) => !isWeekend(d) || used(d))
+  }, [anchor, weekStartsOn, range])
+
+  const step = (dir: -1 | 1) => {
+    if (view === 'year') go({ d: addYears(anchor, dir) })
+    else if (view === 'month') go({ d: addMonths(anchor, dir) })
+    else if (view === 'week') go({ d: isDesktop ? addWeeks(anchor, dir) : addDays(anchor, dir * 7) })
+  }
+
+  const title =
+    view === 'year'
+      ? format(anchor, 'yyyy')
+      : view === 'month'
+        ? format(anchor, 'MMMM yyyy')
+        : view === 'week'
+          ? `${format(days[0] ?? anchor, 'd MMM')} – ${format(days[days.length - 1] ?? anchor, isDesktop ? 'd MMM yyyy' : 'd MMM')}`
+          : 'Tally'
+
+  const copyWeek = async () => {
+    const undos: Undo[] = []
+    for (const d of weekDays(anchor, weekStartsOn, true)) {
+      if (range?.days.has(iso(d)) || range?.periodList.some((p) => p.date === iso(d))) undos.push(await copyDay(iso(d), iso(addDays(d, 7))))
+    }
+    if (!undos.length) return toast('Nothing to copy this week.')
+    onUndoable('Week copied to next week (classes only, without notes).', async () => {
+      for (const u of undos.reverse()) await u()
+    })
+  }
+
+  const loading = !schools || !range
+
   return (
-    <ComingSoon
-      title="Schedule"
-      icon={CalendarDays}
-      phase={4}
-      description="Week, month and year calendars with drag-and-drop periods, tallies and the PDF report."
-    />
+    <Page
+      width="full"
+      title={title}
+      actions={
+        <>
+          {view !== 'tally' && (
+            <div className="flex items-center gap-1">
+              <IconButton icon={ChevronLeft} label="Previous" onClick={() => step(-1)} />
+              <Button size="sm" onClick={() => go({ d: new Date() })}>
+                Today
+              </Button>
+              <IconButton icon={ChevronRight} label="Next" onClick={() => step(1)} />
+            </div>
+          )}
+          <span className="hidden sm:contents">
+            <Button icon={FileText} onClick={() => setReportOpen(true)}>
+              PDF report
+            </Button>
+          </span>
+          <Menu
+            trigger={(p) => <IconButton {...p} icon={MoreVertical} label="More schedule actions" />}
+            items={[
+              { label: 'Copy this week to next week', icon: Copy, onSelect: copyWeek, disabled: view !== 'week' },
+              { label: 'PDF report', icon: FileText, onSelect: () => setReportOpen(true) },
+            ]}
+          />
+        </>
+      }
+    >
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <Tabs<View>
+          value={view}
+          onChange={(v) => go({ v })}
+          label="Schedule view"
+          items={[
+            { id: 'week', label: 'Week', icon: Rows3 },
+            { id: 'month', label: 'Month', icon: CalendarDays },
+            { id: 'year', label: 'Year', icon: Grid3x3 },
+            { id: 'tally', label: 'Tally', icon: BarChart3 },
+          ]}
+        />
+      </div>
+
+      {loading ? (
+        <div className="grid h-64 place-items-center">
+          <Spinner />
+        </div>
+      ) : schools.length === 0 ? (
+        <Card>
+          <EmptyState
+            icon={SchoolIcon}
+            title="Add a school to start planning"
+            description="Schools hold your classes and timetables. Once you’ve added one, assign it to days here."
+            action={
+              <Link to="/schools">
+                <Button variant="primary">Go to Schools</Button>
+              </Link>
+            }
+          />
+        </Card>
+      ) : view === 'week' ? (
+        isDesktop ? (
+          <div className="h-[calc(100dvh-13rem)]">
+            <WeekView
+              days={days}
+              dayMap={range.days}
+              periods={range.periods}
+              schools={schoolMap}
+              plans={plans}
+              onEditPeriod={setPeriodTarget}
+              onEditDay={setDayTarget}
+              onUndoable={onUndoable}
+            />
+          </div>
+        ) : (
+          <AgendaView
+            days={weekDays(anchor, weekStartsOn, days.some(isWeekend))}
+            selected={anchor}
+            onSelect={(d) => go({ d })}
+            onShift={(dir) => go({ d: addDays(anchor, dir) })}
+            dayMap={range.days}
+            periods={range.periods}
+            schools={schoolMap}
+            plans={plans}
+            onEditPeriod={setPeriodTarget}
+            onEditDay={setDayTarget}
+          />
+        )
+      ) : view === 'month' ? (
+        <MonthView
+          month={anchor}
+          periods={range.periodList}
+          dayMap={range.days}
+          schools={schoolMap}
+          weekStartsOn={weekStartsOn}
+          onPick={(d) => go({ v: 'week', d })}
+        />
+      ) : view === 'year' ? (
+        <YearView
+          year={anchor.getFullYear()}
+          dayMap={range.days}
+          schools={schoolMap}
+          weekStartsOn={weekStartsOn}
+          onPick={(d) => go({ v: d.getDate() === 1 ? 'month' : 'week', d })}
+        />
+      ) : (
+        <TallyView schools={schools} weekStartsOn={weekStartsOn} />
+      )}
+
+      {range && (
+        <>
+          <PeriodEditor
+            target={periodTarget}
+            onClose={() => setPeriodTarget(null)}
+            period={periodTarget ? range.periods.get(`${periodTarget.date}:${periodTarget.slot}`) : undefined}
+            day={periodTarget ? range.days.get(periodTarget.date) : undefined}
+            school={periodTarget ? schoolMap.get(range.days.get(periodTarget.date)?.schoolId ?? '') : undefined}
+            onUndoable={onUndoable}
+          />
+          <DayEditor
+            date={dayTarget}
+            day={dayTarget ? range.days.get(dayTarget) : undefined}
+            schools={schools ?? []}
+            periodCount={dayTarget ? range.periodList.filter((p) => p.date === dayTarget).length : 0}
+            onClose={() => setDayTarget(null)}
+            onUndoable={onUndoable}
+          />
+        </>
+      )}
+      {reportOpen && (
+        <Suspense fallback={null}>
+          <ReportDialog onClose={() => setReportOpen(false)} schools={schools ?? []} />
+        </Suspense>
+      )}
+    </Page>
   )
 }

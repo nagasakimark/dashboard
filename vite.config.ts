@@ -48,6 +48,12 @@ export default defineConfig({
         navigateFallback: `${base}index.html`,
         runtimeCaching: [
           {
+            // Japanese font for PDF reports, fetched only when needed.
+            urlPattern: /^https:\/\/cdn\.jsdelivr\.net\/gh\/google\/fonts@main\/ofl\/mplus1p\//,
+            handler: 'CacheFirst',
+            options: { cacheName: 'report-fonts', expiration: { maxEntries: 4 } },
+          },
+          {
             urlPattern: ({ request }) => request.destination === 'image',
             handler: 'CacheFirst',
             options: {
