@@ -1,0 +1,1 @@
+import{b as e}from"./index-B-yEzzdi.js";import{s as t}from"./App-jW-kLsXF.js";import{t as n}from"./ComingSoon-B4NuLAQR.js";var r=e();function i(){return(0,r.jsx)(n,{title:`Class history`,icon:t,phase:7,description:`Search and edit every class you have taught.`})}export{i as default};

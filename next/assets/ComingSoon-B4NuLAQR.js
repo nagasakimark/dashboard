@@ -1,0 +1,1 @@
+import{b as e,g as t,m as n}from"./index-B-yEzzdi.js";import{t as r}from"./Page-BXUD9LyG.js";var i=e();function a({title:e,icon:a,phase:o,description:s}){return(0,i.jsx)(r,{title:e,children:(0,i.jsx)(n,{children:(0,i.jsx)(t,{icon:a,title:`Coming in phase ${o}`,description:s})})})}export{a as t};
