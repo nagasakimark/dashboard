@@ -15,6 +15,7 @@ const ROUTES = [
   'schools',
   'settings',
   'links',
+  'help',
   'board',
   'games',
   'games?set=pd-animals',

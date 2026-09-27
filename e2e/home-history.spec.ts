@@ -41,6 +41,7 @@ test('class history searches and edits a class', async ({ page }, info) => {
   const dialog = page.getByRole('dialog', { name: 'Edit period' })
   await dialog.getByLabel('What you did / plan to do').fill('Unit 1 greetings — played bingo')
   await dialog.getByRole('button', { name: 'Save' }).click()
+  await expect(dialog).toBeHidden() // saving is async; the list updates after the dialog closes
   await page.getByLabel('Search classes').fill('bingo')
   await expect(page.getByText('Unit 1 greetings — played bingo')).toBeVisible()
   await page.getByLabel('Search classes').fill('')

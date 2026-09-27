@@ -1,5 +1,5 @@
 /// <reference types="vitest/config" />
-import { readFileSync } from 'node:fs'
+import { copyFileSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
@@ -30,6 +30,13 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    // GitHub Pages serves 404.html for unknown paths: the same page, so deep
+    // links such as /dashboard/student?room=12345 (old QR codes) still load.
+    {
+      name: 'spa-404',
+      apply: 'build',
+      closeBundle: () => copyFileSync('dist/index.html', 'dist/404.html'),
+    },
     tailwindcss(),
     VitePWA({
       registerType: 'prompt',
@@ -57,6 +64,9 @@ export default defineConfig({
         // wallpapers) is cached on first use by the runtime rule below.
         globPatterns: ['**/*.{js,css,html,svg}', '**/inter-latin-wght-*.woff2', 'icons/*.png'],
         navigateFallback: `${base}index.html`,
+        // The live site also hosts the old dashboard, the old planner and the
+        // preview under /dashboard/: never answer those with this app.
+        navigateFallbackDenylist: base === '/dashboard/' ? [/^\/dashboard\/(legacy|next|planner)(\/|$)/] : [],
         runtimeCaching: [
           {
             // Japanese font for PDF reports, fetched only when needed.

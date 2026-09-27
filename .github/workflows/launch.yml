@@ -1,0 +1,126 @@
+name: Launch (switch /dashboard/)
+
+# Manual only. "launch" publishes the new app at /dashboard/ and keeps the old
+# dashboard at /dashboard/legacy/ (its files under /assets/ and /planner/ stay
+# where its pages load them from). "rollback" puts the old dashboard back at
+# /dashboard/ and replaces the new app's service worker with one that removes
+# itself, so browsers stop serving the cached new app.
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'launch or rollback'
+        required: true
+        type: choice
+        options: [launch, rollback]
+      confirm:
+        description: 'Type the action again to confirm'
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: launch
+  cancel-in-progress: false
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check confirmation
+        run: |
+          if [ "${{ inputs.action }}" != "${{ inputs.confirm }}" ]; then
+            echo "Confirmation didn't match; nothing was changed." && exit 1
+          fi
+
+  check:
+    needs: guard
+    if: inputs.action == 'launch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
+
+  launch:
+    needs: check
+    if: inputs.action == 'launch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+        env:
+          BASE_PATH: /dashboard/
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          path: site
+          fetch-depth: 0
+      - name: Publish at /dashboard/, old dashboard at /dashboard/legacy/
+        run: |
+          cd site
+          git fetch --tags --force
+          if [ ! -f legacy/index.html ]; then
+            mkdir -p legacy
+            git show legacy-v1:index.html > legacy/index.html
+          fi
+          # Remove the previous launch's files (the old dashboard's are never listed).
+          if [ -f .app-files ]; then xargs -a .app-files -d '\n' rm -f; fi
+          cp -r ../dist/. .
+          (cd ../dist && find . -type f | sed 's#^\./##') > .app-files
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Launch: new dashboard ${GITHUB_SHA::7} at /dashboard/ (old one at /legacy/)" || echo "No changes."
+          git push
+
+  rollback:
+    needs: guard
+    if: inputs.action == 'rollback'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          path: site
+          fetch-depth: 0
+      - name: Put the old dashboard back at /dashboard/
+        run: |
+          cd site
+          git fetch --tags --force
+          if [ -f .app-files ]; then xargs -a .app-files -d '\n' rm -f; rm .app-files; fi
+          git show legacy-v1:index.html > index.html
+          git show legacy-v1:404.html > 404.html
+          # A service worker that unregisters itself and reloads open pages.
+          cat > sw.js <<'SW'
+          self.addEventListener('install', () => self.skipWaiting())
+          self.addEventListener('activate', (event) => {
+            event.waitUntil(
+              (async () => {
+                for (const key of await caches.keys()) await caches.delete(key)
+                await self.registration.unregister()
+                for (const client of await self.clients.matchAll({ type: 'window' })) client.navigate(client.url)
+              })(),
+            )
+          })
+          SW
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Rollback: old dashboard back at /dashboard/" || echo "No changes."
+          git push

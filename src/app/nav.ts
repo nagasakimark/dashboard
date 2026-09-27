@@ -1,6 +1,7 @@
 import {
   BookOpen,
   CalendarDays,
+  CircleHelp,
   History,
   House,
   Link2,
@@ -32,6 +33,7 @@ export const plannerNav: NavItem[] = [
   { to: '/links', label: 'Links', icon: Link2 },
   { to: '/schools', label: 'Schools', icon: School },
   { to: '/settings', label: 'Settings', icon: Settings },
+  { to: '/help', label: 'Help', icon: CircleHelp },
 ]
 
 export const boardNav: NavItem = { to: '/board', label: 'Classroom board', short: 'Board', icon: Presentation }

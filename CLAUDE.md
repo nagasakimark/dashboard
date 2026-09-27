@@ -1,6 +1,6 @@
 # ALT Dashboard: handoff guide for Claude
 
-A full rebuild of the user's classroom dashboard + ALT Planner as one PWA on GitHub Pages. **Phases 0–13 are done in code (Phase 13 waits on the user's Firebase console steps and a two-device test). Start at Phase 14.** The checklist is `docs/OVERHAUL_PLAN.md`: tick boxes as work lands, mark each phase ✅ with the date, and commit the plan with the phase.
+A full rebuild of the user's classroom dashboard + ALT Planner as one PWA on GitHub Pages. **Phases 0–13 are built and Phase 14 is prepared. What's left needs the user:** Firebase console steps and a two-device sync test (Phase 13), reviewing the preview with real data, running the Launch workflow (never without their go-ahead), and tidying `alt-planner/archive/`. The checklist is `docs/OVERHAUL_PLAN.md`: tick boxes as work lands, mark each phase ✅ with the date, and commit the plan with the phase.
 
 ## Where things are
 - **This repo, branch `app`:** source code. Work and push here.
@@ -75,7 +75,8 @@ E2E tests take screenshots into `test-results/shots/`; look at them to check the
 - Anything that writes records must still go through `repo.ts` so `updatedAt` and tombstones are right; sync relies on them. Seeded defaults should use fixed ids and `updatedAt: 0`. Settings that describe one device go in `DEVICE_ONLY_SETTINGS`.
 - Whole-database replaces must go through `replaceAllData` (it fires `DATA_REPLACED`, which makes the cloud match).
 
-## Next up: Phase 14 (launch)
-Needs the user: a review of the preview with real data, then the cutover (`/dashboard/` → new app, old build kept at `/dashboard/legacy/`), a user guide, and tidying `archive/` in `alt-planner` together. Ask before switching `/dashboard/`.
+## Launch (Phase 14) notes
+- `.github/workflows/launch.yml` (manual, typed confirmation): `launch` publishes to `main` root with the old build at `/legacy/`; `rollback` undoes it with a self-removing service worker. A `.app-files` list in `main` tracks the new app's files so re-launches clean up after themselves. Never run it without the user's go-ahead.
+- The build writes `404.html` (for `/dashboard/student?room=…`), and the service worker's navigation fallback skips `/legacy/`, `/next/` and `/planner/`.
 
 

@@ -2,7 +2,7 @@
 
 A full rebuild of **nagasakimark.github.io/dashboard**: the classroom board, the ALT planner, games, polls and panels. It becomes one polished, installable PWA hosted on GitHub Pages.
 
-Status: **in progress** (started 2026-09-27). Each box gets ticked as it's done, and each phase ends with a commit.
+Status: **Phases 0–13 built; launch prepared, waiting on your review** (started 2026-09-27). Each box gets ticked as it's done, and each phase ends with a commit.
 
 ---
 
@@ -274,11 +274,11 @@ Whichever you pick, sync is **optional and off by default**. The app works fully
 - [x] Tests: the sync engine runs against a fake cloud with two "devices" (copying, newest-wins with clock skew, deletions, no echoes, device-only settings, cursors, import replacing the cloud). Firebase itself loads only when sync is on (the first-load budgets still pass)
 - [ ] ⚠️ *You:* test with the PC and your phone together (steps in SETUP.md §3 "Try it")
 
-### Phase 14 — Launch
-- [ ] Run your real data through the preview at `/dashboard/next/`, and you review it
-- [ ] Switch `/dashboard/` over to the new app. Keep the old build at `/dashboard/legacy/` for a while as a fallback
-- [ ] Write a short user guide (in the app and the README)
-- [ ] Go through `archive/` together and delete what isn't needed
+### Phase 14 — Launch (prepared 2026-09-27; ⚠️ waiting on you)
+- [ ] ⚠️ *You:* run your real data through the preview at `/dashboard/next/` and review it (Home offers the one-click import from the old dashboard and planner on the same site)
+- [ ] ⚠️ *You (then one click):* switch `/dashboard/` over. **Ready:** the **Launch (switch /dashboard/)** workflow (Actions → Launch → Run workflow, choose `launch` and type it again) runs every test, publishes the new app at `/dashboard/` and keeps the old build at `/dashboard/legacy/` (the old planner stays at `/dashboard/planner/`). `rollback` restores the old dashboard and retires the new app's service worker. Both were dry-run against a copy of `main`: the new app, the old dashboard at `/legacy/` and `/dashboard/student?room=…` (old QR codes, via the new `404.html`) all load, and the new service worker leaves `/legacy/`, `/next/` and `/planner/` alone
+- [x] Short user guide: in the app (**Help** in the menu) and in the README (plus launch and rollback instructions)
+- [ ] ⚠️ *You:* go through `archive/` in `alt-planner` together and delete what isn't needed (that repository isn't attached to these sessions)
 
 ---
 
