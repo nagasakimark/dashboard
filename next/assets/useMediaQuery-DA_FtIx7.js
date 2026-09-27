@@ -1,1 +1,0 @@
-import{W as e,q as t}from"./index-JBVSuynk.js";var n=t(e(),1);function r(e){return(0,n.useSyncExternalStore)(t=>{let n=window.matchMedia(e);return n.addEventListener(`change`,t),()=>n.removeEventListener(`change`,t)},()=>window.matchMedia(e).matches,()=>!1)}var i=()=>r(`(min-width: 768px)`);export{i as t};
