@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 /**
  * Local editing state for a value that is persisted elsewhere (IndexedDB).
@@ -10,7 +10,9 @@ export function useDraft<T>(value: T, commit: (v: T) => unknown, delay = 400) {
   const [draft, setDraft] = useState(value)
   const pending = useRef<ReturnType<typeof setTimeout> | null>(null)
   const latest = useRef({ draft, commit })
-  latest.current = { draft, commit }
+  useLayoutEffect(() => {
+    latest.current = { draft, commit }
+  })
 
   useEffect(() => {
     if (!pending.current) setDraft(value)
