@@ -1,0 +1,1 @@
+var e=e=>e>0?`p.${e}`:``,t=t=>[e(t.page),t.title].filter(Boolean).join(` · `),n=(e,t)=>e.page-t.page||e.order-t.order;export{e as n,t as r,n as t};
