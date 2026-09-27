@@ -199,18 +199,21 @@ export default function SchedulePage() {
         </Card>
       ) : view === 'week' ? (
         isDesktop ? (
-          <div className="flex min-h-0 flex-1 gap-1.5">
+          // The arrows fill the whole margin on each side, from the sidebar and the window edge.
+          <div className="-mx-4 flex min-h-0 flex-1 sm:-mx-6 md:-my-3">
             <WeekArrow dir={-1} onClick={() => step(-1)} />
-            <WeekView
-              days={days}
-              dayMap={range.days}
-              periods={range.periods}
-              schools={schoolMap}
-              plans={plans}
-              onEditPeriod={setPeriodTarget}
-              onEditDay={setDayTarget}
-              onUndoable={onUndoable}
-            />
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col py-3">
+              <WeekView
+                days={days}
+                dayMap={range.days}
+                periods={range.periods}
+                schools={schoolMap}
+                plans={plans}
+                onEditPeriod={setPeriodTarget}
+                onEditDay={setDayTarget}
+                onUndoable={onUndoable}
+              />
+            </div>
             <WeekArrow dir={1} onClick={() => step(1)} />
           </div>
         ) : (
@@ -286,9 +289,9 @@ function WeekArrow({ dir, onClick }: { dir: -1 | 1; onClick: () => void }) {
       onClick={onClick}
       aria-label={dir < 0 ? 'Previous week' : 'Next week'}
       title={dir < 0 ? 'Previous week' : 'Next week'}
-      className="grid w-9 shrink-0 place-items-center rounded-2xl text-ink-faint transition-colors hover:bg-accent-soft hover:text-accent active:bg-accent-muted xl:w-11"
+      className="group grid w-11 shrink-0 cursor-pointer place-items-center text-ink-faint transition-colors hover:bg-accent-soft/70 hover:text-accent active:bg-accent-muted xl:w-14"
     >
-      <Icon size={26} aria-hidden />
+      <Icon size={28} aria-hidden className="transition-transform group-hover:scale-110" />
     </button>
   )
 }

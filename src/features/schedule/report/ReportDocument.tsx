@@ -37,6 +37,11 @@ const shade = (hex: string) => {
   return `rgb(${m((n >> 16) & 255)}, ${m((n >> 8) & 255)}, ${m(n & 255)})`
 }
 
+/** Heights (pt) that make the weekly grid fill an A4 landscape page exactly. */
+const PERIOD_ROWS_HEIGHT = 422
+const SCHOOL_ROW_HEIGHT = 28
+const NOTE_LINE = 7.5 * 1.2
+
 const s = StyleSheet.create({
   page: { padding: 24, paddingBottom: 40, fontSize: 9, color: ink, backgroundColor: '#ffffff' },
   footer: {
@@ -86,9 +91,9 @@ const s = StyleSheet.create({
   dayDate: { fontSize: 8, color: '#64748b', marginTop: 1 },
   schoolCell: { flex: 1, padding: 4, justifyContent: 'center', alignItems: 'center', borderRightWidth: 1, borderColor: line },
   cell: { flex: 1, padding: 4, alignItems: 'center', borderRightWidth: 1, borderColor: line, overflow: 'hidden' },
-  classText: { fontSize: 9.5, fontWeight: 'bold', color: ink },
-  specialText: { fontSize: 8, fontWeight: 'bold', color: '#4b5563', textAlign: 'center' },
-  note: { fontSize: 7.5, color: soft, marginTop: 2, lineHeight: 1.2, textAlign: 'center' },
+  classText: { fontSize: 9.5, fontWeight: 'bold', color: ink, maxLines: 1 },
+  specialText: { fontSize: 8, fontWeight: 'bold', color: '#4b5563', textAlign: 'center', maxLines: 1, textOverflow: 'ellipsis' },
+  note: { fontSize: 7.5, color: soft, marginTop: 2, lineHeight: 1.2, textAlign: 'center', width: '100%' },
   // Tally
   tHead: { flexDirection: 'row' },
   tCell: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 4, borderRightWidth: 1, borderColor: '#cbd5e1' },
@@ -221,6 +226,11 @@ function WeekSchedule({ d, week }: { d: ReportData; week: TallyWeek }) {
     rows.push(n)
     if (hasLunch && n === Math.min(lunchAfter, periodCount)) rows.push('lunch')
   }
+  // Fixed row heights so a week always fits its page: long notes end in "…"
+  // instead of pushing the grid onto the next page.
+  const unit = PERIOD_ROWS_HEIGHT / rows.reduce<number>((n, r) => n + (r === 'lunch' ? 0.5 : 1), 0)
+  const heightOf = (slot: Slot) => (slot === 'lunch' ? unit / 2 : unit)
+  const noteLines = (slot: Slot) => Math.max(1, Math.floor((heightOf(slot) - 8 - 13) / NOTE_LINE))
 
   return (
     <View style={s.week}>
@@ -248,7 +258,7 @@ function WeekSchedule({ d, week }: { d: ReportData; week: TallyWeek }) {
             )
           })}
         </View>
-        <View style={[s.row, { minHeight: 20 }]}>
+        <View style={[s.row, { height: SCHOOL_ROW_HEIGHT }]}>
           {days.map((day, i) => {
             const { a, school } = schoolOf(day)
             return (
@@ -265,16 +275,17 @@ function WeekSchedule({ d, week }: { d: ReportData; week: TallyWeek }) {
                 <Text style={school ? { fontSize: 8, fontWeight: 'bold', color: shade(school.color), textAlign: 'center' } : s.specialText}>
                   {school?.name ?? (a?.kind === 'off' ? (a.dayType ?? 'Day off') : ' ')}
                 </Text>
-                {a?.note ? <Text style={{ fontSize: 6.5, color: soft, textAlign: 'center', marginTop: 1 }}>{a.note}</Text> : null}
+                {a?.note ? (
+                  <Text style={{ fontSize: 6.5, color: soft, textAlign: 'center', marginTop: 1, maxLines: 1, textOverflow: 'ellipsis' }}>
+                    {a.note}
+                  </Text>
+                ) : null}
               </View>
             )
           })}
         </View>
         {rows.map((slot, r) => (
-          <View
-            key={String(slot)}
-            style={[s.row, { flexGrow: slot === 'lunch' ? 0.5 : 1 }, r === rows.length - 1 ? { borderBottomWidth: 0 } : {}]}
-          >
+          <View key={String(slot)} style={[s.row, { height: heightOf(slot) }, r === rows.length - 1 ? { borderBottomWidth: 0 } : {}]}>
             {days.map((day, i) => {
               const { a, school } = schoolOf(day)
               const p = d.periods.get(`${iso(day)}:${slot}`)
@@ -298,7 +309,7 @@ function WeekSchedule({ d, week }: { d: ReportData; week: TallyWeek }) {
                   ) : slot === 'lunch' ? (
                     <Text style={{ fontSize: 7, color: faint }}>{p ? 'Lunch' : ' '}</Text>
                   ) : null}
-                  {note ? <Text style={s.note}>{note.length > 80 ? `${note.slice(0, 78)}…` : note}</Text> : null}
+                  {note ? <Text style={[s.note, { maxLines: noteLines(slot), textOverflow: 'ellipsis' }]}>{note}</Text> : null}
                 </View>
               )
             })}

@@ -18,6 +18,7 @@ import {
   schoolYearStart,
   slotLabel,
   slotOrder,
+  isWeekend,
   weekDays,
 } from '@/features/schedule/model'
 import { current, upcoming, withTimes, type TimedPeriod } from '@/features/schedule/upcoming'
@@ -262,7 +263,7 @@ function TaughtCard({ schools, className }: { schools: Map<string, School>; clas
   )
 }
 
-/** This week's classes, day by day, plus upcoming days off and events. */
+/** This week's classes (next week's at the weekend), day by day, plus upcoming days off and events. */
 function WeekCard({
   now,
   data,
@@ -279,7 +280,10 @@ function WeekCard({
   className?: string
 }) {
   const today = iso(now)
-  const days = weekDays(now, weekStartsOn, false)
+  // At the weekend, look ahead to the coming week rather than the one just finished.
+  const weekend = isWeekend(now)
+  const anchor = weekend ? addDays(now, now.getDay() === 6 ? 2 : 1) : now
+  const days = weekDays(anchor, weekStartsOn, false)
   const events = [...data.days.values()]
     .filter((d) => d.date >= today && (d.kind === 'off' || d.note))
     .sort((a, b) => a.date.localeCompare(b.date))
@@ -289,9 +293,9 @@ function WeekCard({
     <Card className={cn('flex flex-col', className)}>
       <CardHeader
         icon={CalendarDays}
-        title="This week"
+        title={weekend ? 'Next week' : 'This week'}
         actions={
-          <ButtonLink to={`/schedule?v=week&d=${today}`} size="sm" variant="ghost">
+          <ButtonLink to={`/schedule?v=week&d=${iso(anchor)}`} size="sm" variant="ghost">
             Open schedule
           </ButtonLink>
         }

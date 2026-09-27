@@ -53,7 +53,7 @@ test('create a school, assign a day and add a class', async ({ page }, info) => 
   await periodDialog.getByRole('button', { name: '6-2' }).click()
   await periodDialog.getByLabel('What you did / plan to do').fill('Unit 2: “What do you want to be?”')
   await periodDialog.getByRole('button', { name: 'Save' }).click()
-  await expect(page.getByRole('button', { name: /6-2 Unit 2: “What do you want to be\?”/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /6-2.*Unit 2: “What do you want to be\?”/ })).toBeVisible()
   await page.screenshot({ path: `test-results/shots/schedule-week-${info.project.name}.png` })
 })
 
@@ -140,4 +140,42 @@ test('report from real data (private fixture)', async ({ page }, info) => {
   await expect(dialog.locator('iframe[title="Report preview"]')).toBeVisible({ timeout: 60_000 })
   const [download] = await Promise.all([page.waitForEvent('download'), dialog.getByRole('link', { name: 'Download PDF' }).click()])
   await download.saveAs('test-results/shots/report-real.pdf')
+})
+
+test('a PDF week with long notes in every period still fits on one page', async ({ page }) => {
+  test.skip(test.info().project.name !== 'desktop', 'one browser size is enough')
+  const days = ['2025-01-06-Monday', '2025-01-07-Tuesday', '2025-01-08-Wednesday', '2025-01-09-Thursday', '2025-01-10-Friday']
+  const note =
+    'Video, students’ 3-hint quiz, worksheet, country facts presentation and a long reflection about the unit with extra practice for fast finishers.'
+  const full = {
+    ...dashboardPlannerExport,
+    assignments: Object.fromEntries(days.map((d) => [d, { schoolId: dashboardPlannerExport.schools[0].id, scheduleId: null }])),
+    schedule: Object.fromEntries(
+      days.flatMap((d) =>
+        [1, 2, 3, 4, 5, 6, 'lunch'].map((n) => [
+          `${d}-${n}`,
+          { yearGroup: 6, classNumber: 1, summary: note, type: 'class', special: null },
+        ]),
+      ),
+    ),
+  }
+  await page.goto('./#/settings')
+  await page
+    .locator('input[type=file]')
+    .setInputFiles({ name: 'planner.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(full)) })
+  await page.getByRole('dialog', { name: 'Import data' }).getByRole('button', { name: 'Replace my data with this' }).click()
+  await expect(page.getByText('Import complete')).toBeVisible()
+  await page.goto('./#/schedule?v=week&d=2025-01-06')
+  await page.getByRole('button', { name: 'PDF report' }).click()
+  const dialog = page.getByRole('dialog', { name: 'PDF report' })
+  await dialog.getByLabel('Start week').fill('2025-01-06')
+  await dialog.getByLabel('Weeks').fill('2')
+  await dialog.getByRole('button', { name: 'Create report' }).click()
+  await expect(dialog.locator('iframe[title="Report preview"]')).toBeVisible({ timeout: 20_000 })
+  const [download] = await Promise.all([page.waitForEvent('download'), dialog.getByRole('link', { name: 'Download PDF' }).click()])
+  await download.saveAs('test-results/shots/report-full-week.pdf')
+  const { readFile } = await import('node:fs/promises')
+  const bytes = await readFile((await download.path())!)
+  // Title, staff overview, the two weeks on one page, and the tally: nothing spills over.
+  expect((bytes.toString('latin1').match(/\/Type \/Page\b/g) ?? []).length).toBe(4)
 })
