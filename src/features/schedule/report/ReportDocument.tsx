@@ -326,7 +326,9 @@ function WeekPages({ d }: { d: ReportData }) {
   return (
     <>
       {pairs.map((pair) => (
-        <Page key={iso(pair[0].start)} size="A4" orientation="landscape" style={[s.page, { fontFamily: d.font }]}>
+        // wrap={false}: a week page never continues onto another page; anything that
+        // doesn't fit is cut off (cells are sized to fit, with notes ending in "…").
+        <Page key={iso(pair[0].start)} size="A4" orientation="landscape" style={[s.page, { fontFamily: d.font }]} wrap={false}>
           <View style={s.runningHead}>
             <Text>SCHEDULE RECORD</Text>
             <Text>{format(pair[0].first, 'MMMM yyyy').toUpperCase()}</Text>

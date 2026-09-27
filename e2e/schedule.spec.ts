@@ -152,13 +152,28 @@ test('a PDF week with long notes in every period still fits on one page', async 
     assignments: Object.fromEntries(days.map((d) => [d, { schoolId: dashboardPlannerExport.schools[0].id, scheduleId: null }])),
     schedule: Object.fromEntries(
       days.flatMap((d) =>
-        [1, 2, 3, 4, 5, 6, 'lunch'].map((n) => [
+        [1, 2, 3, 4, 5, 6, 'lunch'].map((n, i) => [
           `${d}-${n}`,
-          { yearGroup: 6, classNumber: 1, summary: note, type: 'class', special: null },
+          i % 3 === 1
+            ? { special: 'Other', summary: `SPEECH PRACTICE moved afternoon break to here due to speech practice ${note}`, type: 'special' }
+            : {
+                yearGroup: 6,
+                classNumber: 1,
+                summary: i % 2 ? `夏休みについて話す during 夏休み ${note}` : note,
+                type: 'class',
+                special: null,
+              },
         ]),
       ),
     ),
   }
+  // The Japanese PDF font comes from a CDN; offline sandboxes use a local Japanese font instead.
+  const { existsSync, readFileSync } = await import('node:fs')
+  const localJp = '/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf'
+  if (existsSync(localJp))
+    await page.route('https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/mplus1p/*', (route) =>
+      route.fulfill({ contentType: 'font/ttf', body: readFileSync(localJp) }),
+    )
   await page.goto('./#/settings')
   await page
     .locator('input[type=file]')
