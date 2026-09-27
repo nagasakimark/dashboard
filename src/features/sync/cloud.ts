@@ -2,6 +2,7 @@ import {
   getAuth,
   getRedirectResult,
   GoogleAuthProvider,
+  linkWithCredential,
   linkWithPopup,
   signInWithCredential,
   signInWithPopup,
@@ -26,6 +27,7 @@ import { db } from '@/data/db'
 import { SYNCED_TABLES } from '@/data/schema'
 import { firebaseApp } from '@/lib/firebaseApp'
 import { SyncEngine, type KeyValue, type Remote, type SyncStatus } from './engine'
+import { googleAccessToken } from './gis'
 
 /*
  * Firebase side of sync, loaded only when sync is on. Data lives at
@@ -53,12 +55,38 @@ export async function currentAccount(): Promise<Account | null> {
   return u && !u.isAnonymous ? toAccount(u) : null
 }
 
+export type SignInMethod = 'google' | 'firebase'
+
 /**
- * Sign in with Google. An anonymous poll session is upgraded in place, so
- * rooms made on this device stay yours. Falls back to a full-page redirect
- * where pop-ups are blocked (some installed apps).
+ * Sign in with Google. `google` (the default) uses Google's own window on
+ * accounts.google.com; `firebase` uses Firebase's window on firebaseapp.com.
+ * An anonymous poll session is upgraded in place, so rooms made on this
+ * device stay yours.
  */
-export async function signInWithGoogle(): Promise<Account | null> {
+export async function signInWithGoogle(method: SignInMethod = 'google'): Promise<Account | null> {
+  return method === 'google' ? signInWithGis() : signInWithFirebaseWindow()
+}
+
+async function signInWithGis(): Promise<Account> {
+  const token = await googleAccessToken()
+  const a = auth()
+  await a.authStateReady()
+  const cred = GoogleAuthProvider.credential(null, token)
+  const u = a.currentUser
+  if (u?.isAnonymous) {
+    try {
+      return toAccount((await linkWithCredential(u, cred)).user)
+    } catch (e) {
+      // That Google account already has data here: sign in to it instead.
+      if ((e as { code?: string }).code !== 'auth/credential-already-in-use') throw e
+      return toAccount((await signInWithCredential(a, GoogleAuthProvider.credentialFromError(e as never) ?? cred)).user)
+    }
+  }
+  return toAccount((await signInWithCredential(a, cred)).user)
+}
+
+/** Firebase's own sign-in window, falling back to a full-page redirect where pop-ups are blocked (some installed apps). */
+async function signInWithFirebaseWindow(): Promise<Account | null> {
   const a = auth()
   await a.authStateReady()
   const provider = new GoogleAuthProvider()

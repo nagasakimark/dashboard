@@ -7,7 +7,8 @@ export interface SyncApi {
   account: { email: string | null; name: string | null; photo: string | null } | null
   status: SyncStatus
   busy: boolean
-  enable: () => Promise<void>
+  /** Sign in and turn sync on: Google's window (default) or Firebase's. */
+  enable: (method?: 'google' | 'firebase') => Promise<void>
   disable: () => Promise<void>
   syncNow: () => Promise<void>
   removeCloudData: () => Promise<void>

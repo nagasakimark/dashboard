@@ -42,13 +42,24 @@ Sync is optional and off until you sign in from **Settings → Sync between devi
 
 ### Let the sign-in window use the API key
 
-The project's API key only accepts requests from listed websites. Google's sign-in window runs on `studentpoll-a9e39.firebaseapp.com`, so that site must be on the list too, or sign-in fails with "Requests from referer https://studentpoll-a9e39.firebaseapp.com/… are blocked".
+The project's API key only accepts requests from listed websites. Firebase's sign-in window ("Try Firebase's sign-in window" in Settings) runs on `studentpoll-a9e39.firebaseapp.com`, so that site must be on the list too, or sign-in fails with "Requests from referer https://studentpoll-a9e39.firebaseapp.com/… are blocked".
 
 1. Open https://console.cloud.google.com/apis/credentials?project=studentpoll-a9e39 (same Google account as Firebase).
 2. Under **API Keys**, click the key named **Browser key (auto created by Firebase)** (it starts `AIzaSyASFX…`).
 3. Under **Application restrictions → Website restrictions**, click **Add** and enter `https://studentpoll-a9e39.firebaseapp.com/*`. Keep the entry for `https://nagasakimark.github.io/*`. (To sign in while testing on your PC, also add `http://localhost/*`.)
 4. If **API restrictions** is set to "Restrict key", make sure the list includes **Identity Toolkit API**, **Token Service API** and **Cloud Firestore API**.
 5. Click **Save**. It can take up to 5 minutes to apply.
+
+### Google's sign-in window (for school networks)
+
+**Sign in with Google** opens Google's own window on `accounts.google.com`, which school web filters allow, rather than Firebase's window on `studentpoll-a9e39.firebaseapp.com`, which some block. Google only opens it for websites listed on the project's sign-in client:
+
+1. Open https://console.cloud.google.com/apis/credentials?project=studentpoll-a9e39.
+2. Under **OAuth 2.0 Client IDs**, click **Web client (auto created by Google Service)**. Its client ID starts `457862393597-u8ha6…`.
+3. Under **Authorized JavaScript origins**, click **Add URI** and enter `https://nagasakimark.github.io` (no slash at the end). To test on your PC, also add `http://localhost:5173`.
+4. Leave **Authorized redirect URIs** as they are, and click **Save**. It can take a few minutes to apply.
+
+Until this is done, Google's window shows "Error 400: origin_mismatch". Close it and use **Try Firebase's sign-in window** (the old way), which works wherever firebaseapp.com isn't blocked. Either way you end up in the same account with the same data.
 
 ### Create the Firestore database
 

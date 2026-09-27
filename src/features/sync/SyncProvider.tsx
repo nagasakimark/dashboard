@@ -72,10 +72,10 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       account,
       status,
       busy,
-      enable: () =>
+      enable: (method) =>
         run(async () => {
           const cloud = await loadCloud()
-          const acc = await cloud.signInWithGoogle()
+          const acc = await cloud.signInWithGoogle(method)
           localStorage.setItem(SYNC_ENABLED_KEY, '1')
           if (!acc) return // redirecting to Google
           if (enabled) await start()

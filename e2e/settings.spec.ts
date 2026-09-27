@@ -59,6 +59,39 @@ test('sync is off by default and offers Google sign-in', async ({ page }) => {
   await expect(page.getByRole('link', { name: /^Sync:/ })).toHaveCount(0)
 })
 
+test('Google sign-in uses Google’s own window (accounts.google.com), not Firebase’s', async ({ page }) => {
+  // Stand-in for Google's sign-in script: record the request and report the window being closed.
+  await page.addInitScript(() => {
+    const w = window as unknown as { google: unknown; gisRequests: unknown[] }
+    w.gisRequests = []
+    w.google = {
+      accounts: {
+        oauth2: {
+          initTokenClient: (config: { client_id: string; scope: string; error_callback: (e: { type: string }) => void }) => ({
+            requestAccessToken: () => {
+              w.gisRequests.push({ client: config.client_id, scope: config.scope })
+              config.error_callback({ type: 'popup_closed' })
+            },
+          }),
+        },
+      },
+    }
+  })
+  const popups: string[] = []
+  page.on('popup', (p) => popups.push(p.url()))
+  await page.goto('./#/settings')
+  const card = page.locator('#sync')
+  await card.getByRole('button', { name: 'Sign in with Google and turn on sync' }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Sign-in didn’t finish' })).toBeVisible()
+  const requests = await page.evaluate(() => (window as unknown as { gisRequests: { client: string; scope: string }[] }).gisRequests)
+  expect(requests).toEqual([
+    { client: expect.stringMatching(/^457862393597-.*\.apps\.googleusercontent\.com$/), scope: 'openid email profile' },
+  ])
+  expect(popups.filter((u) => u.includes('firebaseapp.com'))).toEqual([])
+  await expect(card.getByRole('button', { name: 'Try Firebase’s sign-in window' })).toBeVisible()
+  await expect(page.getByRole('link', { name: /^Sync:/ })).toHaveCount(0)
+})
+
 test('the install button is always there, with steps when the browser has no prompt', async ({ page }) => {
   await page.goto('./#/settings')
   await page.getByRole('button', { name: 'Install app' }).click()
