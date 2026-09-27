@@ -1,1 +1,0 @@
-import{c as e,d as t,s as n}from"./index-C-xAOoc-.js";import{t as r}from"./Page-BXGrKZ9c.js";var i=t();function a({title:t,icon:a,phase:o,description:s}){return(0,i.jsx)(r,{title:t,children:(0,i.jsx)(n,{children:(0,i.jsx)(e,{icon:a,title:`Coming in phase ${o}`,description:s})})})}export{a as t};

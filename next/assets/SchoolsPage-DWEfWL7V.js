@@ -1,0 +1,1 @@
+import{v as e}from"./index-D8Jsie6W.js";import{o as t}from"./App-oBcWdDAy.js";import{t as n}from"./ComingSoon-D9CFGI9S.js";var r=e();function i(){return(0,r.jsx)(n,{title:`Schools`,icon:t,phase:4,description:`Schools, JTEs, classes and timetables.`})}export{i as default};

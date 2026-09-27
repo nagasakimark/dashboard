@@ -1,0 +1,1 @@
+import{v as e}from"./index-D8Jsie6W.js";import{l as t}from"./App-oBcWdDAy.js";import{t as n}from"./ComingSoon-D9CFGI9S.js";var r=e();function i(){return(0,r.jsx)(n,{title:`Lesson plans`,icon:t,phase:5,description:`Your lesson plan library with a rich editor, resources, tags and printable layouts.`})}export{i as default};

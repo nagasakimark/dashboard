@@ -1,1 +1,0 @@
-import{d as e}from"./index-C-xAOoc-.js";import{l as t}from"./App-O0s3FHFa.js";import{t as n}from"./ComingSoon-CynrUO1W.js";var r=e();function i(){return(0,r.jsx)(n,{title:`Schedule`,icon:t,phase:4,description:`Week, month and year calendars with drag-and-drop periods, tallies and the PDF report.`})}export{i as default};
