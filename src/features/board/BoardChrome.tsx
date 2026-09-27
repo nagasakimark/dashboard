@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Expand,
+  Gamepad2,
   Image,
   Keyboard,
   Layers,
@@ -150,6 +151,11 @@ export function Dock({
         <span className="sr-only lg:hidden">More widgets</span>
       </button>
       <span className="mx-1 h-8 w-px shrink-0 bg-white/20" aria-hidden />
+      <Link to="/games" className={item} title="Vocabulary games and JHS mode (G)">
+        <Gamepad2 size={20} aria-hidden />
+        <span className="hidden lg:block">Games</span>
+        <span className="sr-only lg:hidden">Games</span>
+      </Link>
       <button type="button" className={item} onClick={onBackground} title="Background (B)">
         <Image size={20} aria-hidden />
         <span className="hidden lg:block">Background</span>
@@ -173,6 +179,7 @@ const SHORTCUTS: [string, string][] = [
   ['N', 'Add a widget'],
   ['D', 'Draw on the board'],
   ['[  ]', 'Previous / next workspace'],
+  ['G', 'Games'],
   ['B', 'Background'],
   ['H', 'Hide or show the controls (projector mode)'],
   ['F', 'Full screen'],

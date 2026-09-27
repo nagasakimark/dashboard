@@ -16,6 +16,7 @@ import type {
   Textbook,
   Todo,
   Tombstone,
+  VocabSet,
   Workspace,
 } from './schema'
 
@@ -49,6 +50,7 @@ export class AppDB extends Dexie {
   templates!: EntityTable<Template, 'id'>
   rosters!: EntityTable<Roster, 'id'>
   bookmarks!: EntityTable<Bookmark, 'id'>
+  vocabSets!: EntityTable<VocabSet, 'id'>
   settings!: EntityTable<SettingRow, 'id'>
   tombstones!: EntityTable<Tombstone, 'id'>
   backups!: EntityTable<Backup, 'id'>
@@ -75,6 +77,8 @@ export class AppDB extends Dexie {
       tombstones: 'id, table, deletedAt',
       backups: 'id, createdAt',
     })
+    // v2 (Phase 10): custom vocabulary sets for the games.
+    this.version(2).stores({ vocabSets: 'id, name, updatedAt' })
   }
 
   /** Untyped access to a synced table by name (export/import/sync). */

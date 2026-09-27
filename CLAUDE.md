@@ -1,6 +1,6 @@
 # ALT Dashboard: handoff guide for Claude
 
-A full rebuild of the user's classroom dashboard + ALT Planner as one PWA on GitHub Pages. **Phases 0–9 are done. Start at Phase 10.** The checklist is `docs/OVERHAUL_PLAN.md`: tick boxes as work lands, mark each phase ✅ with the date, and commit the plan with the phase.
+A full rebuild of the user's classroom dashboard + ALT Planner as one PWA on GitHub Pages. **Phases 0–10 are done. Start at Phase 11.** The checklist is `docs/OVERHAUL_PLAN.md`: tick boxes as work lands, mark each phase ✅ with the date, and commit the plan with the phase.
 
 ## Where things are
 - **This repo, branch `app`:** source code. Work and push here.
@@ -65,7 +65,11 @@ E2E tests take screenshots into `test-results/shots/`; look at them to check the
 - `src/features/polls/`: `db.ts` is a tiny realtime-DB interface with a Firebase backend (`firebaseDb.ts`, lazy) and a local one (`localDb.ts`, used when `localStorage.pollBackend === 'local'`; all poll e2e tests use it). `session.ts` holds the room and poll logic, `model.ts` the results maths and CSV.
 - The rules are in `docs/firebase/`. The user has to apply them in the console by following `docs/firebase/SETUP.md`; ask whether they have before relying on anonymous-auth ownership.
 
-## Next up: Phase 10 (games and JHS Classroom Mode)
-Extract the vocabulary sets and game rules from `GameModal-*.js` on `legacy-v1` (see "Old game and vocabulary code" above) and the JHS data from `docs/legacy/data/jhs-books.json`.
+## Games and JHS (Phase 10) notes
+- `src/features/games/` (modes in `modes/`, lazy) and `src/features/jhs/`. Built-in data is static under `public/games/` (sets, img, jhs) with a bundled index in `src/content/games/sets.json`; regenerate with `node scripts/legacy/extract-vocab.mjs && node scripts/legacy/extract-jhs.mjs && python3 scripts/legacy/convert-images.py` (needs Pillow and the `legacy-v1` tag).
+- Custom sets live in the `vocabSets` table (Dexie v2).
 
-Then Phases 11–14 per the plan.
+## Next up: Phase 11 (panels and settings)
+Activities (see `docs/legacy/dashboard-spec.md` §6 for the link list), Bookmarks (the `bookmarks` table, already migrated) and textbook links on the board, then the remaining Settings items.
+
+Then Phases 12–14 per the plan.

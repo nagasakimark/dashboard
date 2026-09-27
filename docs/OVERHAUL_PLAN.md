@@ -239,11 +239,15 @@ Whichever you pick, sync is **optional and off by default**. The app works fully
 - [x] Old rooms expire: any room nobody has opened for 7 days is deleted by the next board that opens a poll (the rules allow only that)
 - [x] Tests run polls on a local backend (`localStorage.pollBackend = 'local'`), so e2e never touches the live database
 
-### Phase 10 — Games and JHS Classroom Mode
-- [ ] Rebuild the 8 game modes on a shared game engine
-- [ ] Move the 58 vocab sets into separate data files, and let you make custom sets
-- [ ] Convert the ~1,175 images to WebP and resize them. They load lazily, and are cached offline per set once used
-- [ ] JHS Classroom Mode: exercise sets, grammar library and teacher reveal, linked to the NH sections from Phase 5
+### Phase 10 — Games and JHS Classroom Mode ✅ (2026-09-27)
+- [x] Rebuilt the 8 game modes on a shared engine (`src/features/games/engine.ts`: shuffling, distractors, scrambling, memory pairs, streak/best/rounds with the best remembered per game), full screen at `#/games` (also from the board's dock, or press G):
+  - Flashcards (flip, shuffle, restart, arrow keys), Quiz (picture → 4 words), Corner Pop (spoken word → 4 corner pictures), Picture Reveal (20 tiles), Missing (random or chosen cards, hide 1–N), Word Scramble (tap or type), Spelling (next letter / type / say it), Memory Match (picture–word, or word–Japanese for sets without pictures)
+  - A 日本語 toggle shows Japanese (with readings where the data has them); games that need pictures are greyed out for sets without them
+- [x] Vocabulary moved out of the bundle into one file per set (`public/games/sets/`): the **58 Picture Dictionary categories**, Let's Try 1–2 and New Horizon 5–6 units (with "with previous units", as before), plus **25 new JHS unit word lists** (NH1–3) so games work with JHS words too. Extraction is reproducible (`scripts/legacy/`)
+- [x] **Custom word sets** (new `vocabSets` table, synced and exported): type or paste words with Japanese, pick pictures from the 1,000+ built-in images or upload your own (shrunk to 320 px)
+- [x] 1,093 images converted to WebP (≤480 px, 10 MB in total). Set data and pictures load when a set opens and are then cached for offline use by the service worker
+- [x] JHS Classroom Mode (`#/jhs`): NH1–3 exercise sets (reorder tiles, fill the blank, multiple choice) with Check answer, hint, Japanese translation and a teacher "Show answer"; a searchable grammar library. Links both ways with the NH presets from Phase 5 ("JHS exercises" on an NH textbook, "p.N in planner" in an exercise set) and to that unit's word games
+  - ⚠️ The old JHS data has furigana flattened into the text (e.g. 動どう詞し); it's shown as it was, because splitting kanji from readings can't be done reliably without a dictionary. Source citations like "[1]" are removed
 
 ### Phase 11 — Panels and settings
 - [ ] Activities (editable list of links), Bookmarks, and textbook links, which merge with the planner's textbooks

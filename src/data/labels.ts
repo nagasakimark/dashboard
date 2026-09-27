@@ -14,5 +14,6 @@ export const TABLE_LABELS: Record<string, string> = {
   templates: 'Board templates',
   rosters: 'Class rosters',
   bookmarks: 'Bookmarks',
+  vocabSets: 'Game word sets',
   settings: 'Settings',
 }

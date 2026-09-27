@@ -216,6 +216,22 @@ export const Bookmark = base.extend({
   order: z.number().default(0),
 })
 
+/* ---------------------------------------------------------------- games */
+
+export const VocabCard = z.object({
+  en: z.string(),
+  ja: z.string().default(''),
+  kana: z.string().default(''),
+  /** Built-in image path (e.g. 'animals/bear.webp') or a small data: URL. */
+  img: z.string().default(''),
+})
+
+/** A custom vocabulary set for the games. */
+export const VocabSet = base.extend({
+  name: z.string(),
+  cards: z.array(VocabCard).default([]),
+})
+
 /* ------------------------------------------------------------- system */
 
 export const SettingRow = z.object({ id, value: z.unknown(), updatedAt: ts })
@@ -247,6 +263,8 @@ export type Workspace = z.infer<typeof Workspace>
 export type Template = z.infer<typeof Template>
 export type Roster = z.infer<typeof Roster>
 export type Bookmark = z.infer<typeof Bookmark>
+export type VocabCard = z.infer<typeof VocabCard>
+export type VocabSet = z.infer<typeof VocabSet>
 export type SettingRow = z.infer<typeof SettingRow>
 export type Tombstone = z.infer<typeof Tombstone>
 
@@ -266,6 +284,7 @@ export const syncedTables = {
   templates: Template,
   rosters: Roster,
   bookmarks: Bookmark,
+  vocabSets: VocabSet,
   settings: SettingRow,
 } as const
 

@@ -33,6 +33,16 @@ const router = createHashRouter([
     errorElement: <RouteError />,
   },
   {
+    path: '/games',
+    element: page(() => import('@/features/games/GamesPage')),
+    errorElement: <RouteError />,
+  },
+  {
+    path: '/jhs',
+    element: page(() => import('@/features/jhs/JhsPage')),
+    errorElement: <RouteError />,
+  },
+  {
     element: <AppShell />,
     errorElement: <RouteError />,
     children: [

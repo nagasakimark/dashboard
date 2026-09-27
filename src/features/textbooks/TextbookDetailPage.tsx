@@ -1,7 +1,20 @@
 import { useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ArrowLeft, BookOpen, ExternalLink, FileJson, MoreVertical, Pencil, Plus, Search, Sparkles, Trash2, Upload } from 'lucide-react'
+import {
+  ArrowLeft,
+  BookOpen,
+  ExternalLink,
+  FileJson,
+  GraduationCap,
+  MoreVertical,
+  Pencil,
+  Plus,
+  Search,
+  Sparkles,
+  Trash2,
+  Upload,
+} from 'lucide-react'
 import { Page } from '@/components/layout/Page'
 import {
   Badge,
@@ -137,6 +150,11 @@ export default function TextbookDetailPage() {
             {book.altopediaUrl && (
               <ButtonLink href={book.altopediaUrl} variant="ghost" iconRight={ExternalLink} className="w-full">
                 ALTopedia
+              </ButtonLink>
+            )}
+            {/^nh[123]-/.test(book.preset ?? '') && (
+              <ButtonLink to={`/jhs?book=${book.preset!.split('-')[0]}`} variant="subtle" icon={GraduationCap} className="w-full">
+                JHS exercises
               </ButtonLink>
             )}
           </div>

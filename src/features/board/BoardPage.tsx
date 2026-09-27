@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Spinner, useFeedback } from '@/components/ui'
 import { db } from '@/data/db'
@@ -43,6 +44,7 @@ const isTyping = (t: EventTarget | null) =>
 /** Classroom board (full screen). */
 export default function BoardPage() {
   const { toast } = useFeedback()
+  const navigate = useNavigate()
   const { settings, setSetting } = useSettings()
   const { workspaces, active, select, ready } = useWorkspaces()
   const { widgets, change, get, update, updateConfig, remove, toFront, toBack } = useWidgets(active)
@@ -140,6 +142,7 @@ export default function BoardPage() {
       if (k === 'n' || k === '+') setAdding(true)
       else if (k === 'd') addWidget('Drawing')
       else if (k === 'b') setSettingsTab('background')
+      else if (k === 'g') navigate('/games')
       else if (k === 'h') setBare((b) => !b)
       else if (k === 'f') toggleFullscreen()
       else if (k === '?') setShortcuts(true)
@@ -150,7 +153,7 @@ export default function BoardPage() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [focusId, bare, workspaces, active, select, addWidget, toggleFullscreen])
+  }, [focusId, bare, workspaces, active, select, addWidget, toggleFullscreen, navigate])
 
   // Leave focus mode when the workspace changes.
   const [focusWorkspace, setFocusWorkspace] = useState(active?.id)

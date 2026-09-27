@@ -54,6 +54,12 @@ export default defineConfig({
             options: { cacheName: 'report-fonts', expiration: { maxEntries: 4 } },
           },
           {
+            // Game word sets and JHS books: fetched when opened, then available offline.
+            urlPattern: /\/games\/(sets|jhs)\/[^/]+\.json$/,
+            handler: 'StaleWhileRevalidate',
+            options: { cacheName: 'game-data', expiration: { maxEntries: 200 } },
+          },
+          {
             urlPattern: ({ request }) => request.destination === 'image',
             handler: 'CacheFirst',
             options: {
