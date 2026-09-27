@@ -1,0 +1,24 @@
+import { StrictMode, Suspense, lazy } from 'react'
+import { createRoot } from 'react-dom/client'
+import { isStudentRoute } from '@/app/routes'
+import { Spinner } from '@/components/ui'
+import './styles/index.css'
+
+// Students joining a poll get a tiny standalone bundle; everyone else gets
+// the full app. The student page must answer at /dashboard/student?room=…
+// because that URL is printed in existing QR codes.
+const Root = isStudentRoute(window.location) ? lazy(() => import('@/features/student/StudentApp')) : lazy(() => import('@/app/App'))
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <Suspense
+      fallback={
+        <div className="grid h-dvh place-items-center">
+          <Spinner className="size-7" />
+        </div>
+      }
+    >
+      <Root />
+    </Suspense>
+  </StrictMode>,
+)
