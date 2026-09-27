@@ -249,6 +249,7 @@ export function convertPlanner(json: Json, now = Date.now()): ConversionResult<P
         topic: str(s.topic),
         notes: str(detail?.notes),
         digitalUrl: str(detail?.digitalLink),
+        altopediaUrl: '',
         order: i,
         ...stamp(s.dateCreated),
       })

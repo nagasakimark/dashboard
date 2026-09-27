@@ -128,6 +128,7 @@ export const Section = base.extend({
   topic: z.string().default(''),
   notes: z.string().default(''),
   digitalUrl: z.string().default(''),
+  altopediaUrl: z.string().default(''),
   order: z.number().default(0),
 })
 

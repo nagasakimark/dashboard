@@ -81,3 +81,72 @@
 @utility safe-top {
   padding-top: env(safe-area-inset-top);
 }
+
+/* Rich text (lesson plans): editor, view and print share these styles. */
+@layer components {
+  .prose-lesson {
+    @apply text-[15px] leading-relaxed text-ink;
+  }
+  .prose-lesson > * + * {
+    @apply mt-2.5;
+  }
+  .prose-lesson h1 {
+    @apply mt-5 text-2xl font-bold tracking-tight;
+  }
+  .prose-lesson h2 {
+    @apply mt-4 text-xl font-bold;
+  }
+  .prose-lesson h3 {
+    @apply mt-3 text-base font-bold;
+  }
+  .prose-lesson ul {
+    @apply list-disc pl-6;
+  }
+  .prose-lesson ol {
+    @apply list-decimal pl-6;
+  }
+  .prose-lesson li > p {
+    @apply my-0.5;
+  }
+  .prose-lesson blockquote {
+    @apply border-l-4 border-accent-muted pl-3 text-ink-soft;
+  }
+  .prose-lesson a {
+    @apply font-medium text-accent underline underline-offset-2;
+  }
+  .prose-lesson mark {
+    @apply rounded bg-yellow-200/80 px-0.5;
+  }
+  .prose-lesson pre {
+    @apply overflow-x-auto rounded-xl bg-ink/5 p-3 font-mono text-sm;
+  }
+  .prose-lesson hr {
+    @apply my-4 border-line;
+  }
+  .prose-lesson p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    @apply pointer-events-none float-left h-0 text-ink-faint;
+  }
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 16mm;
+  }
+  .print-sheet + .print-sheet {
+    break-before: page;
+  }
+  .prose-lesson {
+    font-size: 11.5pt;
+  }
+  .prose-lesson h1,
+  .prose-lesson h2,
+  .prose-lesson h3 {
+    break-after: avoid;
+  }
+  .prose-lesson li,
+  .prose-lesson blockquote {
+    break-inside: avoid;
+  }
+}

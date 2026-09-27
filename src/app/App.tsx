@@ -23,6 +23,11 @@ const page = (load: () => Promise<{ default: React.ComponentType }>) => {
 
 const router = createHashRouter([
   {
+    path: '/print/lessons',
+    element: page(() => import('@/features/lessons/LessonPrintPage')),
+    errorElement: <RouteError />,
+  },
+  {
     path: '/board',
     element: page(() => import('@/features/board/BoardPage')),
     errorElement: <RouteError />,
@@ -34,8 +39,10 @@ const router = createHashRouter([
       { index: true, element: page(() => import('@/features/home/HomePage')) },
       { path: 'schedule', element: page(() => import('@/features/schedule/SchedulePage')) },
       { path: 'lessons', element: page(() => import('@/features/lessons/LessonsPage')) },
+      { path: 'lessons/:id', element: page(() => import('@/features/lessons/LessonEditorPage')) },
       { path: 'curriculum', element: page(() => import('@/features/curriculum/CurriculumPage')) },
       { path: 'textbooks', element: page(() => import('@/features/textbooks/TextbooksPage')) },
+      { path: 'textbooks/:id', element: page(() => import('@/features/textbooks/TextbookDetailPage')) },
       { path: 'history', element: page(() => import('@/features/history/HistoryPage')) },
       { path: 'schools', element: page(() => import('@/features/schools/SchoolsPage')) },
       { path: 'settings', element: page(() => import('@/features/settings/SettingsPage')) },

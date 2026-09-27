@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router'
 import { format } from 'date-fns'
-import { ArrowRightLeft, History, Trash2 } from 'lucide-react'
+import { ArrowRightLeft, History, Plus, Trash2 } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Button, Dialog, Field, Input, Select, Textarea, useFeedback } from '@/components/ui'
 import { db } from '@/data/db'
@@ -32,6 +33,7 @@ export function PeriodEditor(props: Props) {
 
 function PeriodForm({ target, onClose, period, day, school, onUndoable }: Props & { target: PeriodTarget }) {
   const { toast } = useFeedback()
+  const navigate = useNavigate()
   const [kind, setKind] = useState<Kind>(period?.kind ?? 'class')
   const [year, setYear] = useState<number | null>(period?.year ?? null)
   const [classNumber, setClassNumber] = useState<number | null>(period?.classNumber ?? null)
@@ -96,6 +98,32 @@ function PeriodForm({ target, onClose, period, day, school, onUndoable }: Props 
     })
     onUndoable(period ? 'Period updated.' : 'Period added.', undo)
     onClose()
+  }
+
+  /** Save this period, then create a linked lesson plan and open it. */
+  const createPlan = async () => {
+    if (!year || !classNumber) {
+      setError('Choose the class first.')
+      return
+    }
+    await savePeriod({
+      date: target.date,
+      slot: target.slot,
+      kind: 'class',
+      year,
+      classNumber,
+      specialType: null,
+      summary: summary.trim(),
+      lessonPlanId: null,
+      curriculumItemId: period?.curriculumItemId ?? null,
+    })
+    const q = new URLSearchParams({
+      period: `${target.date}:${target.slot}`,
+      year: String(year),
+      title: summary.trim() || `${year}-${classNumber} lesson`,
+    })
+    if (school) q.set('school', school.id)
+    navigate(`/lessons/new?${q}`)
   }
 
   const onDelete = async () => {
@@ -283,15 +311,20 @@ function PeriodForm({ target, onClose, period, day, school, onUndoable }: Props 
         {kind === 'class' && (
           <Field label="Lesson plan" hint="Plans for this year group are listed first.">
             {(id) => (
-              <Select id={id} value={lessonPlanId ?? ''} onChange={(e) => setLessonPlanId(e.target.value || null)}>
-                <option value="">None</option>
-                {sortedPlans.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.year ? `Y${p.year} · ` : ''}
-                    {p.title}
-                  </option>
-                ))}
-              </Select>
+              <div className="flex gap-2">
+                <Select id={id} value={lessonPlanId ?? ''} onChange={(e) => setLessonPlanId(e.target.value || null)}>
+                  <option value="">None</option>
+                  {sortedPlans.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.year ? `Y${p.year} · ` : ''}
+                      {p.title}
+                    </option>
+                  ))}
+                </Select>
+                <Button icon={Plus} onClick={createPlan} title="Create a new lesson plan for this class">
+                  New
+                </Button>
+              </div>
             )}
           </Field>
         )}

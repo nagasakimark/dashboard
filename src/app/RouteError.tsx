@@ -1,6 +1,6 @@
-import { isRouteErrorResponse, Link, useRouteError } from 'react-router'
+import { isRouteErrorResponse, useRouteError } from 'react-router'
 import { RefreshCw, TriangleAlert } from 'lucide-react'
-import { Button } from '@/components/ui'
+import { Button, ButtonLink } from '@/components/ui'
 
 /**
  * Shown when a page throws. Stale chunks after a deploy are the most common
@@ -26,9 +26,7 @@ export function RouteError() {
           <Button variant="primary" icon={RefreshCw} onClick={() => window.location.reload()}>
             Reload
           </Button>
-          <Link to="/">
-            <Button>Go home</Button>
-          </Link>
+          <ButtonLink to="/">Go home</ButtonLink>
         </div>
       </div>
     </div>

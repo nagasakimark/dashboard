@@ -1,4 +1,5 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from 'react'
+import { Link } from 'react-router'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/cn'
 
@@ -27,6 +28,56 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children?: ReactNode
 }
 
+const base =
+  'inline-flex shrink-0 items-center justify-center font-semibold whitespace-nowrap transition-[background,color,filter,transform] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50'
+
+/** Class names for button styling (e.g. on links). */
+const buttonClass = ({ variant = 'secondary', size = 'md', className }: { variant?: Variant; size?: Size; className?: string } = {}) =>
+  cn(base, variants[variant], sizes[size], className)
+
+type ButtonLinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> & {
+  variant?: Variant
+  size?: Size
+  icon?: LucideIcon
+  iconRight?: LucideIcon
+  children?: ReactNode
+} & ({ to: string; href?: never } | { href: string; to?: never })
+
+/** A link that looks like a button: an in-app route (`to`) or a URL (`href`). */
+export function ButtonLink({
+  variant = 'secondary',
+  size = 'md',
+  icon: Icon,
+  iconRight: IconRight,
+  className,
+  children,
+  to,
+  href,
+  ...props
+}: ButtonLinkProps) {
+  const iconSize = size === 'sm' ? 15 : 17
+  const content = (
+    <>
+      {Icon && <Icon size={iconSize} aria-hidden />}
+      {children}
+      {IconRight && <IconRight size={iconSize} aria-hidden />}
+    </>
+  )
+  const cls = buttonClass({ variant, size, className })
+  if (to !== undefined)
+    return (
+      <Link to={to} className={cls} {...props}>
+        {content}
+      </Link>
+    )
+  const external = /^https?:/.test(href ?? '')
+  return (
+    <a href={href} className={cls} {...(external ? { target: '_blank', rel: 'noreferrer' } : {})} {...props}>
+      {content}
+    </a>
+  )
+}
+
 export function Button({
   variant = 'secondary',
   size = 'md',
@@ -39,16 +90,7 @@ export function Button({
 }: ButtonProps) {
   const iconSize = size === 'sm' ? 15 : 17
   return (
-    <button
-      type={type}
-      className={cn(
-        'inline-flex shrink-0 items-center justify-center font-semibold whitespace-nowrap transition-[background,color,filter,transform] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50',
-        variants[variant],
-        sizes[size],
-        className,
-      )}
-      {...props}
-    >
+    <button type={type} className={buttonClass({ variant, size, className })} {...props}>
       {Icon && <Icon size={iconSize} aria-hidden />}
       {children}
       {IconRight && <IconRight size={iconSize} aria-hidden />}

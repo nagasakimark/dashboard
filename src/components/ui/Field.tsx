@@ -14,7 +14,7 @@ export const Textarea = ({ className, ...props }: TextareaHTMLAttributes<HTMLTex
 )
 
 export const Select = ({ className, children, ...props }: SelectHTMLAttributes<HTMLSelectElement>) => (
-  <div className="relative">
+  <div className="relative min-w-0 flex-1">
     <select className={cn(control, 'h-10 appearance-none pr-9', className)} {...props}>
       {children}
     </select>

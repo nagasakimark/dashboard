@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { pdf } from '@react-pdf/renderer'
 import { addDays, eachWeekOfInterval, format, startOfWeek, subWeeks } from 'date-fns'
 import { Download, FileText, RefreshCw } from 'lucide-react'
-import { Button, Dialog, Field, Input, Select, Spinner, Switch, useFeedback } from '@/components/ui'
+import { Button, Dialog, Field, Input, Select, Spinner, Switch, useFeedback, ButtonLink } from '@/components/ui'
 import { db } from '@/data/db'
 import type { School } from '@/data/schema'
 import { getSettings } from '@/data/settings'
@@ -122,11 +122,9 @@ export default function ReportDialog({ onClose, schools }: { onClose: () => void
               <Button icon={RefreshCw} onClick={generate} disabled={busy}>
                 Regenerate
               </Button>
-              <a href={url} download={fileName}>
-                <Button variant="primary" icon={Download}>
-                  Download PDF
-                </Button>
-              </a>
+              <ButtonLink href={url} download={fileName} variant="primary" icon={Download}>
+                Download PDF
+              </ButtonLink>
             </>
           ) : (
             <Button variant="primary" icon={FileText} onClick={generate} disabled={busy || o.from > o.to}>

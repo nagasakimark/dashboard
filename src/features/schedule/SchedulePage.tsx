@@ -26,9 +26,8 @@ import {
   BarChart3,
   School as SchoolIcon,
 } from 'lucide-react'
-import { Link } from 'react-router'
 import { Page } from '@/components/layout/Page'
-import { Button, Card, EmptyState, IconButton, Menu, Spinner, Tabs, useFeedback } from '@/components/ui'
+import { Button, Card, EmptyState, IconButton, Menu, Spinner, Tabs, useFeedback, ButtonLink } from '@/components/ui'
 import { useSettings } from '@/data/settings'
 import { useIsDesktop } from '@/lib/useMediaQuery'
 import { copyDay, type Undo } from './actions'
@@ -188,9 +187,9 @@ export default function SchedulePage() {
             title="Add a school to start planning"
             description="Schools hold your classes and timetables. Once you’ve added one, assign it to days here."
             action={
-              <Link to="/schools">
-                <Button variant="primary">Go to Schools</Button>
-              </Link>
+              <ButtonLink to="/schools" variant="primary">
+                Go to Schools
+              </ButtonLink>
             }
           />
         </Card>
