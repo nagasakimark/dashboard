@@ -65,6 +65,8 @@ export function WeekView({ days, dayMap, periods, schools, plans, onEditPeriod, 
   )
   const copyHeld = useCopyModifier()
   const [dragging, setDragging] = useState<Period | null>(null)
+  // Days without a school borrow the week's timetable shape so rows line up.
+  const shape = days.map((d) => schools.get(dayMap.get(iso(d))?.schoolId ?? '')).find(Boolean)
 
   const onDragStart = (e: DragStartEvent) => setDragging(periods.get(String(e.active.id)) ?? null)
   const onDragEnd = async (e: DragEndEvent) => {
@@ -92,7 +94,7 @@ export function WeekView({ days, dayMap, periods, schools, plans, onEditPeriod, 
         },
       }}
     >
-      <div className="grid h-full min-h-[34rem] gap-2" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
+      <div className="grid min-h-0 min-w-0 flex-1 gap-2" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
         {days.map((d) => (
           <DayColumn
             key={iso(d)}
@@ -103,6 +105,7 @@ export function WeekView({ days, dayMap, periods, schools, plans, onEditPeriod, 
             plans={plans}
             onEditPeriod={onEditPeriod}
             onEditDay={onEditDay}
+            shape={shape}
           />
         ))}
       </div>
@@ -132,11 +135,12 @@ function DayColumn({
   plans,
   onEditPeriod,
   onEditDay,
-}: Omit<Props, 'days' | 'dayMap' | 'onUndoable'> & { date: Date; day: DayAssignment | undefined }) {
+  shape,
+}: Omit<Props, 'days' | 'dayMap' | 'onUndoable'> & { date: Date; day: DayAssignment | undefined; shape: School | undefined }) {
   const key = iso(date)
   const school = day?.schoolId ? schools.get(day.schoolId) : undefined
   const timetable = timetableFor(school, day)
-  const slots = daySlots(school)
+  const slots = daySlots(school ?? shape)
   // Periods stored in slots this school doesn't have (e.g. P7) still show.
   const extra = [...periods.values()].filter((p) => p.date === key && !slots.includes(p.slot)).map((p) => p.slot)
   const allSlots = [...slots, ...extra]
@@ -184,7 +188,7 @@ function DayColumn({
           {day?.dayType}
         </button>
       ) : (
-        <div className="flex flex-1 flex-col divide-y divide-line">
+        <div className="flex min-h-0 flex-1 flex-col divide-y divide-line">
           {allSlots.map((slot) => (
             <SlotCell
               key={String(slot)}
@@ -228,7 +232,11 @@ function SlotCell({
   return (
     <div
       ref={dropRef}
-      className={cn('relative min-h-0', lunch ? 'flex-[0.6]' : 'flex-1', isOver && 'bg-accent-soft ring-2 ring-accent/40 ring-inset')}
+      className={cn(
+        'relative min-h-0 overflow-hidden',
+        lunch ? 'flex-[0.6]' : 'flex-1',
+        isOver && 'bg-accent-soft ring-2 ring-accent/40 ring-inset',
+      )}
     >
       <button
         ref={dragRef}

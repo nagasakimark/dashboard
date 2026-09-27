@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useNavigate } from 'react-router'
 import { Archive, ArchiveRestore, Clock, MoreVertical, Pencil, Plus, School as SchoolIcon, Trash2, Users } from 'lucide-react'
 import { Page } from '@/components/layout/Page'
 import { Badge, Button, Card, EmptyState, IconButton, Menu, Spinner, useFeedback } from '@/components/ui'
@@ -6,12 +6,11 @@ import { db } from '@/data/db'
 import { patch, remove } from '@/data/repo'
 import type { School } from '@/data/schema'
 import { useSchools } from '@/features/schedule/hooks'
-import { SchoolEditor } from './SchoolEditor'
 
 export default function SchoolsPage() {
   const schools = useSchools()
   const { confirm, toast } = useFeedback()
-  const [editing, setEditing] = useState<School | 'new' | null>(null)
+  const navigate = useNavigate()
 
   const onDelete = async (s: School) => {
     const days = await db.dayAssignments.where('schoolId').equals(s.id).count()
@@ -34,7 +33,7 @@ export default function SchoolsPage() {
       title="Schools"
       description="Your schools, their classes, JTEs and timetables."
       actions={
-        <Button variant="primary" icon={Plus} onClick={() => setEditing('new')}>
+        <Button variant="primary" icon={Plus} onClick={() => navigate('/schools/new')}>
           <span className="hidden sm:inline">Add school</span>
           <span className="sm:hidden">Add</span>
         </Button>
@@ -51,7 +50,7 @@ export default function SchoolsPage() {
             title="No schools yet"
             description="Add the schools you visit. Each one gets a colour, its classes, JTEs and timetables."
             action={
-              <Button variant="primary" icon={Plus} onClick={() => setEditing('new')}>
+              <Button variant="primary" icon={Plus} onClick={() => navigate('/schools/new')}>
                 Add your first school
               </Button>
             }
@@ -91,7 +90,7 @@ export default function SchoolsPage() {
                     )}
                   </div>
                   <div className="flex shrink-0 items-center">
-                    <IconButton icon={Pencil} label={`Edit ${s.name}`} size="sm" onClick={() => setEditing(s)} />
+                    <IconButton icon={Pencil} label={`Edit ${s.name}`} size="sm" onClick={() => navigate(`/schools/${s.id}`)} />
                     <Menu
                       trigger={(p) => <IconButton {...p} icon={MoreVertical} label="More actions" size="sm" />}
                       items={[
@@ -111,8 +110,6 @@ export default function SchoolsPage() {
           })}
         </div>
       )}
-
-      {editing && <SchoolEditor school={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />}
     </Page>
   )
 }

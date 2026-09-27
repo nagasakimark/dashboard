@@ -40,6 +40,16 @@ Sync is optional and off until you sign in from **Settings → Sync between devi
 2. Switch **Enable** on, choose your email as the **project support email**, and click **Save**.
 3. Open the **Settings** tab (still in Authentication) → **Authorized domains** → **Add domain**, type `nagasakimark.github.io`, and click **Add**. (`localhost` is already there, which is enough for testing on your PC.)
 
+### Let the sign-in window use the API key
+
+The project's API key only accepts requests from listed websites. Google's sign-in window runs on `studentpoll-a9e39.firebaseapp.com`, so that site must be on the list too, or sign-in fails with "Requests from referer https://studentpoll-a9e39.firebaseapp.com/… are blocked".
+
+1. Open https://console.cloud.google.com/apis/credentials?project=studentpoll-a9e39 (same Google account as Firebase).
+2. Under **API Keys**, click the key named **Browser key (auto created by Firebase)** (it starts `AIzaSyASFX…`).
+3. Under **Application restrictions → Website restrictions**, click **Add** and enter `https://studentpoll-a9e39.firebaseapp.com/*`. Keep the entry for `https://nagasakimark.github.io/*`. (To sign in while testing on your PC, also add `http://localhost/*`.)
+4. If **API restrictions** is set to "Restrict key", make sure the list includes **Identity Toolkit API**, **Token Service API** and **Cloud Firestore API**.
+5. Click **Save**. It can take up to 5 minutes to apply.
+
 ### Create the Firestore database
 
 1. **Build → Firestore Database → Create database**.

@@ -6,14 +6,14 @@ async function setup(page: Page) {
     .getByRole('button', { name: /Add (your first )?school/ })
     .first()
     .click()
-  const editor = page.getByRole('dialog', { name: 'Add a school' })
-  await editor.getByLabel('School name').fill('Tomachi JHS')
-  await editor.getByRole('tab', { name: /Classes/ }).click()
+  const editor = page.getByRole('main')
+  await editor.getByLabel('Name', { exact: true }).fill('Tomachi JHS')
   await editor.getByLabel('From year').fill('1')
   await editor.getByLabel('To year').fill('1')
   await editor.getByLabel('Classes per year').fill('3')
   await editor.getByRole('button', { name: 'Add classes' }).click()
-  await editor.getByRole('button', { name: 'Save school' }).click()
+  await page.getByRole('button', { name: 'Save school' }).click()
+  await expect(page).toHaveURL(/#\/schools$/)
 
   await page.goto('./#/textbooks')
   await page

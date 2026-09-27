@@ -1,26 +1,28 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { addDays, differenceInMinutes, format, isToday, isTomorrow } from 'date-fns'
-import { ArrowRight, BookOpen, CalendarDays, Clock, ListChecks, NotebookPen, Presentation, Sparkles, type LucideIcon } from 'lucide-react'
+import { addDays, differenceInMinutes, format, isToday, isTomorrow, startOfMonth } from 'date-fns'
+import { BookOpen, CalendarDays, CalendarHeart, GraduationCap, Sparkles } from 'lucide-react'
 import { Page } from '@/components/layout/Page'
-import { Badge, ButtonLink, Card, CardHeader } from '@/components/ui'
+import { Badge, ButtonLink, Card, CardHeader, Select } from '@/components/ui'
 import { db } from '@/data/db'
-import {
-  classKey,
-  type Curriculum,
-  type CurriculumItem,
-  type DayAssignment,
-  type LessonPlan,
-  type Period,
-  type School,
-} from '@/data/schema'
+import type { DayAssignment, LessonPlan, Period, School } from '@/data/schema'
 import { useSettings } from '@/data/settings'
-import { classPosition, progressIndex, trackedClasses } from '@/features/curriculum/model'
 import { useSchoolMap } from '@/features/schedule/hooks'
-import { classLabel, fromIso, iso, periodSubtitle, periodTitle, slotLabel, weekDays } from '@/features/schedule/model'
-import { current, daySchedule, upcoming, withTimes, type TimedPeriod } from '@/features/schedule/upcoming'
+import {
+  classLabel,
+  fromIso,
+  iso,
+  periodSubtitle,
+  periodTitle,
+  schoolYearStart,
+  slotLabel,
+  slotOrder,
+  weekDays,
+} from '@/features/schedule/model'
+import { current, upcoming, withTimes, type TimedPeriod } from '@/features/schedule/upcoming'
 import { cn } from '@/lib/cn'
+import { useIsDesktop } from '@/lib/useMediaQuery'
 import { useNow } from '@/lib/useNow'
 import { LegacyImportBanner } from './LegacyImportBanner'
 import { TodoList } from './TodoList'
@@ -29,9 +31,6 @@ interface HomeData {
   periods: Period[]
   days: Map<string, DayAssignment>
   plans: Map<string, LessonPlan>
-  curricula: Curriculum[]
-  items: CurriculumItem[]
-  index: Map<string, Set<string>>
 }
 
 function greeting(date: Date) {
@@ -45,43 +44,23 @@ const when = (d: Date | null, date: string) => {
   return d ? `${label}, ${format(d, 'H:mm')}` : label
 }
 
-/** First unfinished curriculum item for a class, across its curricula. */
-function nextCurriculumItem(d: HomeData, schools: School[], key: string): string | null {
-  for (const c of d.curricula) {
-    if (!trackedClasses(c, schools).some((t) => t.key === key)) continue
-    const items = d.items.filter((i) => i.curriculumId === c.id).sort((a, b) => a.order - b.order)
-    const next = classPosition(items, d.index, key).next
-    if (next) return next.text
-  }
-  return null
-}
-
 export default function HomePage() {
   const now = useNow()
   const { settings } = useSettings()
   const schools = useSchoolMap()
+  const desktop = useIsDesktop()
   const today = iso(now)
   const weekStart = iso(weekDays(now, settings.weekStartsOn, true)[0])
   const from = weekStart < today ? weekStart : today
-  const to = iso(addDays(now, 21))
+  const to = iso(addDays(now, 28))
 
   const data = useLiveQuery(async (): Promise<HomeData> => {
-    const [periods, days, plans, curricula, items, progress] = await Promise.all([
+    const [periods, days, plans] = await Promise.all([
       db.periods.where('date').between(from, to, true, true).toArray(),
       db.dayAssignments.where('date').between(from, to, true, true).toArray(),
       db.lessonPlans.toArray(),
-      db.curricula.toArray(),
-      db.curriculumItems.toArray(),
-      db.classProgress.toArray(),
     ])
-    return {
-      periods,
-      days: new Map(days.map((d) => [d.date, d])),
-      plans: new Map(plans.map((p) => [p.id, p])),
-      curricula,
-      items,
-      index: progressIndex(progress),
-    }
+    return { periods, days: new Map(days.map((d) => [d.date, d])), plans: new Map(plans.map((p) => [p.id, p])) }
   }, [from, to])
 
   const timed = useMemo(() => (data ? withTimes(data.periods, data.days, schools) : []), [data, schools])
@@ -90,246 +69,296 @@ export default function HomePage() {
   const name = settings.profileName.split(/\s+/)[0]
 
   return (
-    <Page title={`${greeting(now)}${name ? `, ${name}` : ''}`} description={format(now, 'EEEE d MMMM')} width="wide">
+    <Page title={`${greeting(now)}${name ? `, ${name}` : ''}`} description={format(now, 'EEEE d MMMM')} width="wide" fill={desktop}>
       <LegacyImportBanner />
-      <div className="grid gap-5 lg:grid-cols-[1fr_22rem]">
-        <div className="min-w-0 space-y-5">
-          {data &&
-            (nowPeriod || nextClass ? (
-              <NextClassCard t={(nowPeriod ?? nextClass)!} live={!!nowPeriod} now={now} data={data} schools={schools} />
-            ) : (
-              <Card className="flex flex-wrap items-center gap-4 p-5">
-                <span className="grid size-12 place-items-center rounded-2xl bg-accent-soft text-accent">
-                  <Sparkles size={24} aria-hidden />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-ink">No classes coming up</p>
-                  <p className="text-sm text-ink-soft">Nothing is scheduled for the next three weeks.</p>
-                </div>
-                <ButtonLink to="/schedule" icon={CalendarDays}>
-                  Plan your week
-                </ButtonLink>
-              </Card>
-            ))}
-          {data && <TodayCard today={today} now={now} data={data} schools={schools} />}
-          {data && <WeekGlance now={now} data={data} schools={schools} weekStartsOn={settings.weekStartsOn} />}
+      <div className="grid gap-4 md:min-h-0 md:flex-1 md:grid-rows-[auto_minmax(0,1fr)] lg:grid-cols-12">
+        <div className="min-w-0 lg:col-span-8">
+          {data && <NextClassCard t={nowPeriod ?? nextClass} live={!!nowPeriod} now={now} data={data} schools={schools} timed={timed} />}
         </div>
-
-        <div className="space-y-5">
-          <TodoList />
-          {data && <CurriculumHighlights data={data} schools={schools} />}
-          <div className="grid grid-cols-2 gap-3">
-            <QuickLink to="/board" icon={Presentation} label="Classroom board" tint="from-indigo-500 to-cyan-500" />
-            <QuickLink to="/lessons" icon={NotebookPen} label="Lesson plans" tint="from-amber-500 to-orange-500" />
-          </div>
-        </div>
+        <TaughtCard schools={schools} className="lg:col-span-4" />
+        {data && (
+          <WeekCard
+            now={now}
+            data={data}
+            timed={timed}
+            schools={schools}
+            weekStartsOn={settings.weekStartsOn}
+            className="min-h-0 lg:col-span-8"
+          />
+        )}
+        <TodoList className="min-h-64 md:min-h-0 lg:col-span-4" />
       </div>
     </Page>
   )
 }
 
+/** The class on now (or next), with the rest of today's classes beside it. */
 function NextClassCard({
   t,
   live,
   now,
   data,
   schools,
+  timed,
 }: {
-  t: TimedPeriod
+  t: TimedPeriod | null
   live: boolean
   now: Date
   data: HomeData
   schools: Map<string, School>
+  timed: TimedPeriod[]
 }) {
-  const { period, school } = t
-  const plan = period.lessonPlanId ? data.plans.get(period.lessonPlanId) : undefined
-  const key = school && period.year && period.classNumber ? classKey(school.id, period.year, period.classNumber) : null
-  const nextItem = key ? nextCurriculumItem(data, [...schools.values()], key) : null
-  const mins = t.start ? differenceInMinutes(t.start, now) : null
+  const today = iso(now)
+  const todays = timed.filter((x) => x.period.date === today && (x.period.kind === 'class' || x.period.summary))
+  const day = data.days.get(today)
+  const todaySchool = day?.schoolId ? schools.get(day.schoolId) : undefined
+  const plan = t?.period.lessonPlanId ? data.plans.get(t.period.lessonPlanId) : undefined
+  const mins = t?.start ? differenceInMinutes(t.start, now) : null
+  const school = t?.school
+
   return (
-    <Card className="overflow-hidden">
+    <Card className="h-full overflow-hidden">
       <div className="h-1.5" style={{ backgroundColor: school?.color ?? 'var(--color-accent)' }} />
-      <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold tracking-wide text-ink-faint uppercase">
-            {live ? 'Happening now' : 'Next class'} · {when(t.start, period.date)}
-            {!live && mins !== null && mins >= 0 && mins < 120 ? ` · in ${mins} min` : ''}
-          </p>
-          <p className="mt-1 text-3xl font-black tracking-tight" style={{ color: school?.color }}>
-            {classLabel(period)} <span className="text-base font-semibold text-ink-soft">{school?.name}</span>
-          </p>
-          <p className="mt-1 text-ink">{plan?.title || period.summary || <span className="text-ink-faint">No plan yet</span>}</p>
-          {nextItem && (
-            <p className="mt-2 flex items-center gap-1.5 text-sm text-ink-soft">
-              <ListChecks size={15} className="shrink-0 text-accent" aria-hidden /> Curriculum next:{' '}
-              <span className="font-medium text-ink">{nextItem}</span>
+      <div className="grid gap-4 p-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
+        {t ? (
+          <div className="flex min-w-0 flex-col">
+            <p className="text-xs font-semibold tracking-wide text-ink-faint uppercase">
+              {live ? 'Happening now' : 'Next class'} · {when(t.start, t.period.date)}
+              {!live && mins !== null && mins >= 0 && mins < 120 ? ` · in ${mins} min` : ''}
             </p>
+            <p className="mt-1 text-4xl font-black tracking-tight" style={{ color: school?.color }}>
+              {classLabel(t.period)} <span className="text-base font-semibold text-ink-soft">{school?.name}</span>
+            </p>
+            <p className="mt-1 line-clamp-2 text-ink">
+              {plan?.title || t.period.summary || <span className="text-ink-faint">No plan yet</span>}
+            </p>
+            <div className="mt-auto flex flex-wrap gap-2 pt-4">
+              {plan && (
+                <ButtonLink to={`/lessons/${plan.id}`} icon={BookOpen} size="sm">
+                  Open plan
+                </ButtonLink>
+              )}
+              <ButtonLink to={`/schedule?v=week&d=${t.period.date}`} size="sm" variant="ghost">
+                View week
+              </ButtonLink>
+            </div>
+          </div>
+        ) : (
+          <div className="flex min-w-0 items-center gap-4">
+            <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-accent-soft text-accent">
+              <Sparkles size={24} aria-hidden />
+            </span>
+            <div>
+              <p className="font-semibold text-ink">No classes coming up</p>
+              <p className="text-sm text-ink-soft">Nothing is scheduled for the next four weeks.</p>
+              <ButtonLink to="/schedule" icon={CalendarDays} size="sm" className="mt-2">
+                Plan your week
+              </ButtonLink>
+            </div>
+          </div>
+        )}
+        <div className="min-w-0 rounded-2xl bg-canvas p-3">
+          <p className="mb-1.5 flex items-baseline justify-between text-xs font-semibold tracking-wide text-ink-faint uppercase">
+            Today
+            <span className="truncate pl-2 normal-case" style={{ color: todaySchool?.color }}>
+              {todaySchool?.name ?? (day?.kind === 'off' ? day.dayType : '')}
+            </span>
+          </p>
+          {todays.length ? (
+            <ul className="space-y-0.5">
+              {todays.map((x) => {
+                const on = x === (live ? t : null)
+                const past = x.end ? x.end <= now : false
+                return (
+                  <li
+                    key={x.period.id}
+                    className={cn('flex items-center gap-2 rounded-lg px-1.5 py-1 text-sm', on && 'bg-accent-soft', past && 'opacity-50')}
+                  >
+                    <span className="w-12 shrink-0 text-xs text-ink-faint tabular-nums">
+                      {x.start ? format(x.start, 'H:mm') : slotLabel(x.period.slot, true)}
+                    </span>
+                    <span className="shrink-0 font-bold" style={{ color: x.period.kind === 'class' ? x.school?.color : undefined }}>
+                      {periodTitle(x.period)}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-xs text-ink-soft">{periodSubtitle(x.period, data.plans)}</span>
+                    {on && <Badge tone="accent">Now</Badge>}
+                  </li>
+                )
+              })}
+            </ul>
+          ) : (
+            <p className="text-sm text-ink-faint">{day?.kind === 'off' ? 'Day off. Enjoy!' : 'No classes today.'}</p>
           )}
-        </div>
-        <div className="flex shrink-0 gap-2">
-          {plan && (
-            <ButtonLink to={`/lessons/${plan.id}`} icon={BookOpen}>
-              Open plan
-            </ButtonLink>
-          )}
-          <ButtonLink to={`/schedule?v=week&d=${period.date}`} variant={plan ? 'ghost' : 'secondary'}>
-            View day
-          </ButtonLink>
         </div>
       </div>
     </Card>
   )
 }
 
-function TodayCard({ today, now, data, schools }: { today: string; now: Date; data: HomeData; schools: Map<string, School> }) {
-  const day = data.days.get(today)
-  const school = day?.schoolId ? schools.get(day.schoolId) : undefined
-  const periods = useMemo(() => new Map(data.periods.map((p) => [p.id, p])), [data.periods])
+/** Classes taught so far (as the old planner counted them), filterable by school and year. */
+function TaughtCard({ schools, className }: { schools: Map<string, School>; className?: string }) {
+  const [schoolId, setSchoolId] = useState('')
+  const [year, setYear] = useState('')
+  const now = useNow(60_000)
+  const today = iso(now)
+  const counts = useLiveQuery(async () => {
+    const [periods, days] = await Promise.all([
+      db.periods.where('date').below(today).toArray(),
+      db.dayAssignments.where('date').below(today).toArray(),
+    ])
+    const dayMap = new Map(days.map((d) => [d.date, d]))
+    const yearStart = iso(schoolYearStart(now))
+    const monthStart = iso(startOfMonth(now))
+    let all = 0
+    let sy = 0
+    let month = 0
+    for (const p of periods) {
+      if (p.kind !== 'class' || p.slot === 'lunch' || !p.year || !p.classNumber) continue
+      const d = dayMap.get(p.date)
+      if (!d?.schoolId || (schoolId && d.schoolId !== schoolId) || (year && p.year !== Number(year))) continue
+      all++
+      if (p.date >= yearStart) sy++
+      if (p.date >= monthStart) month++
+    }
+    return { all, sy, month }
+  }, [today, schoolId, year])
+  const years = [...new Set([...schools.values()].flatMap((s) => s.classes.map((c) => c.year)))].sort()
+
   return (
-    <Card>
-      <CardHeader
-        icon={Clock}
-        title="Today"
-        description={school ? school.name : day?.kind === 'off' ? day.dayType : 'No school set'}
-        actions={
-          <ButtonLink to={`/schedule?v=week&d=${today}`} size="sm" variant="ghost" iconRight={ArrowRight}>
-            Week
-          </ButtonLink>
-        }
-      />
-      {day?.kind === 'off' ? (
-        <p className="px-5 pb-5 text-sm text-ink-soft">Enjoy the day off!</p>
-      ) : (
-        <ul className="divide-y divide-line border-t border-line">
-          {daySchedule(today, day, school, periods).map(({ slot, period, start, end, times }) => {
-            const live = !!(start && end && start <= now && now < end)
-            const past = end ? end <= now : false
-            return (
-              <li
-                key={String(slot)}
-                className={cn('flex items-center gap-3 px-5 py-2.5', live && 'bg-accent-soft/60', past && 'opacity-50')}
-              >
-                <span className="w-20 shrink-0 text-xs text-ink-faint tabular-nums">
-                  <span className="block font-semibold text-ink-soft">{slotLabel(slot, true)}</span>
-                  {times ? `${times.start}–${times.end}` : ''}
-                </span>
-                {period ? (
-                  <span className="min-w-0 flex-1">
-                    <span className="font-bold" style={{ color: period.kind === 'class' ? school?.color : undefined }}>
-                      {periodTitle(period)}
-                    </span>
-                    <span className="block truncate text-sm text-ink-soft">{periodSubtitle(period, data.plans)}</span>
-                  </span>
-                ) : (
-                  <span className="flex-1 text-sm text-ink-faint">Free</span>
-                )}
-                {live && <Badge tone="accent">Now</Badge>}
-              </li>
-            )
-          })}
-        </ul>
-      )}
+    <Card className={cn('flex flex-col', className)}>
+      <CardHeader icon={GraduationCap} title="Classes taught" description="Up to yesterday" />
+      <div className="flex flex-1 items-center gap-5 px-5">
+        <span className="text-5xl font-black tracking-tighter text-accent tabular-nums">{counts?.all ?? '–'}</span>
+        <dl className="space-y-0.5 text-sm">
+          <div className="flex gap-2">
+            <dt className="text-ink-soft">This school year</dt>
+            <dd className="font-bold tabular-nums">{counts?.sy ?? '–'}</dd>
+          </div>
+          <div className="flex gap-2">
+            <dt className="text-ink-soft">This month</dt>
+            <dd className="font-bold tabular-nums">{counts?.month ?? '–'}</dd>
+          </div>
+        </dl>
+      </div>
+      <div className="flex gap-2 p-4 pt-3">
+        <Select aria-label="School" value={schoolId} onChange={(e) => setSchoolId(e.target.value)} className="h-8 text-xs">
+          <option value="">All schools</option>
+          {[...schools.values()].map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </Select>
+        <Select aria-label="Year" value={year} onChange={(e) => setYear(e.target.value)} className="h-8 text-xs">
+          <option value="">All years</option>
+          {years.map((y) => (
+            <option key={y} value={y}>
+              Year {y}
+            </option>
+          ))}
+        </Select>
+      </div>
     </Card>
   )
 }
 
-function WeekGlance({
+/** This week's classes, day by day, plus upcoming days off and events. */
+function WeekCard({
   now,
   data,
+  timed,
   schools,
   weekStartsOn,
+  className,
 }: {
   now: Date
   data: HomeData
+  timed: TimedPeriod[]
   schools: Map<string, School>
   weekStartsOn: 0 | 1
+  className?: string
 }) {
+  const today = iso(now)
+  const days = weekDays(now, weekStartsOn, false)
+  const events = [...data.days.values()]
+    .filter((d) => d.date >= today && (d.kind === 'off' || d.note))
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(0, 4)
+
   return (
-    <Card>
-      <CardHeader icon={CalendarDays} title="This week" />
-      <div className="grid grid-cols-5 gap-2 px-5 pb-5">
-        {weekDays(now, weekStartsOn, false).map((d) => {
+    <Card className={cn('flex flex-col', className)}>
+      <CardHeader
+        icon={CalendarDays}
+        title="This week"
+        actions={
+          <ButtonLink to={`/schedule?v=week&d=${today}`} size="sm" variant="ghost">
+            Open schedule
+          </ButtonLink>
+        }
+      />
+      <div className="grid min-h-0 flex-1 grid-cols-5 gap-2 px-5">
+        {days.map((d) => {
           const k = iso(d)
           const day = data.days.get(k)
           const school = day?.schoolId ? schools.get(day.schoolId) : undefined
-          const count = data.periods.filter((p) => p.date === k && p.kind === 'class' && p.slot !== 'lunch').length
+          const classes = timed
+            .filter((x) => x.period.date === k && x.period.kind === 'class')
+            .sort((a, b) => slotOrder(a.period.slot, school?.lunchAfter) - slotOrder(b.period.slot, school?.lunchAfter))
           return (
             <Link
               key={k}
               to={`/schedule?v=week&d=${k}`}
               className={cn(
-                'min-w-0 rounded-2xl border p-2 text-center transition-colors hover:bg-canvas',
+                'flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border p-2 transition-[filter] hover:brightness-[0.98]',
                 isToday(d) ? 'border-accent ring-2 ring-accent/20' : 'border-line',
               )}
-              style={school ? { backgroundColor: `color-mix(in oklab, ${school.color} 10%, white)` } : undefined}
+              style={school ? { backgroundColor: `color-mix(in oklab, ${school.color} 9%, white)` } : undefined}
             >
-              <span className="block text-[11px] font-semibold text-ink-faint uppercase">{format(d, 'EEE')}</span>
-              <span className="block text-lg font-bold text-ink">{format(d, 'd')}</span>
-              <span className="block truncate text-[11px] font-semibold" style={{ color: school?.color }}>
+              <span className="text-[11px] font-semibold text-ink-faint uppercase">
+                {format(d, 'EEE')} <span className="text-ink">{format(d, 'd')}</span>
+              </span>
+              <span className="truncate text-xs font-semibold" style={{ color: school?.color }}>
                 {school?.name ?? (day?.kind === 'off' ? day.dayType : '—')}
               </span>
-              {count > 0 && (
-                <span className="block text-[11px] text-ink-faint">
-                  {count} {count === 1 ? 'class' : 'classes'}
+              <ul className="mt-1 min-h-0 space-y-0.5 overflow-hidden text-xs">
+                {classes.map((x) => (
+                  <li key={x.period.id} className="leading-tight">
+                    <span className="flex gap-1.5">
+                      <span className="text-ink-faint">{slotLabel(x.period.slot, true)}</span>
+                      <span className="font-bold" style={{ color: school?.color }}>
+                        {classLabel(x.period)}
+                      </span>
+                    </span>
+                    {periodSubtitle(x.period, data.plans) && (
+                      <span className="block truncate text-[11px] text-ink-soft">{periodSubtitle(x.period, data.plans)}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              {classes.length > 0 && (
+                <span className="mt-auto pt-1 text-[11px] text-ink-soft">
+                  {(() => {
+                    const n = classes.filter((x) => x.period.slot !== 'lunch').length
+                    return `${n} ${n === 1 ? 'class' : 'classes'}`
+                  })()}
                 </span>
               )}
             </Link>
           )
         })}
       </div>
+      <div className="flex flex-wrap items-center gap-2 px-5 py-3 text-xs">
+        <CalendarHeart size={15} className="text-ink-faint" aria-hidden />
+        {events.length ? (
+          events.map((e) => (
+            <span key={e.date} className="rounded-full bg-canvas px-2.5 py-1">
+              <span className="font-semibold">{format(fromIso(e.date), 'EEE d MMM')}</span> · {e.kind === 'off' ? e.dayType : e.note}
+            </span>
+          ))
+        ) : (
+          <span className="text-ink-faint">No days off or events in the next four weeks.</span>
+        )}
+      </div>
     </Card>
-  )
-}
-
-function CurriculumHighlights({ data, schools }: { data: HomeData; schools: Map<string, School> }) {
-  if (!data.curricula.length) return null
-  const list = [...schools.values()]
-  return (
-    <Card>
-      <CardHeader
-        icon={ListChecks}
-        title="Curriculum"
-        actions={
-          <ButtonLink to="/curriculum" size="sm" variant="ghost" iconRight={ArrowRight}>
-            All
-          </ButtonLink>
-        }
-      />
-      <ul className="space-y-3 px-5 pb-5">
-        {data.curricula.slice(0, 4).map((c) => {
-          const items = data.items.filter((i) => i.curriculumId === c.id)
-          const classes = trackedClasses(c, list)
-          const pct = classes.length
-            ? classes.reduce((n, cl) => n + classPosition(items, data.index, cl.key).done, 0) / (classes.length * Math.max(1, items.length))
-            : items.filter((i) => i.completed).length / Math.max(1, items.length)
-          return (
-            <li key={c.id}>
-              <Link to={`/curriculum/${c.id}`} className="block rounded-xl hover:bg-canvas">
-                <span className="flex justify-between gap-2 text-sm">
-                  <span className="truncate font-medium text-ink">{c.name}</span>
-                  <span className="text-ink-faint tabular-nums">{Math.round(pct * 100)}%</span>
-                </span>
-                <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-ink/8">
-                  <span className="block h-full rounded-full bg-accent" style={{ width: `${pct * 100}%` }} />
-                </span>
-              </Link>
-            </li>
-          )
-        })}
-      </ul>
-    </Card>
-  )
-}
-
-function QuickLink({ to, icon: Icon, label, tint }: { to: string; icon: LucideIcon; label: string; tint: string }) {
-  return (
-    <Link to={to} className="group">
-      <Card className="flex flex-col items-start gap-3 p-4 transition-[box-shadow,transform] group-hover:-translate-y-0.5 group-hover:shadow-pop">
-        <span className={`grid size-10 place-items-center rounded-xl bg-gradient-to-br text-white ${tint}`}>
-          <Icon size={20} aria-hidden />
-        </span>
-        <span className="text-sm font-semibold text-ink">{label}</span>
-      </Card>
-    </Link>
   )
 }

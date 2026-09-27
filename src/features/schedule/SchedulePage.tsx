@@ -132,19 +132,35 @@ export default function SchedulePage() {
 
   const loading = !schools || !range
 
+  const tabs = (
+    <Tabs<View>
+      value={view}
+      onChange={(v) => go({ v })}
+      label="Schedule view"
+      items={[
+        { id: 'week', label: 'Week', icon: Rows3 },
+        { id: 'month', label: 'Month', icon: CalendarDays },
+        { id: 'year', label: 'Year', icon: Grid3x3 },
+        { id: 'tally', label: 'Tally', icon: BarChart3 },
+      ]}
+    />
+  )
+
   return (
     <Page
       width="full"
       title={title}
+      fill={isDesktop && view !== 'tally'}
+      tools={tabs}
       actions={
         <>
           {view !== 'tally' && (
             <div className="flex items-center gap-1">
-              <IconButton icon={ChevronLeft} label="Previous" onClick={() => step(-1)} />
+              {(!isDesktop || view !== 'week') && <IconButton icon={ChevronLeft} label="Previous" onClick={() => step(-1)} />}
               <Button size="sm" onClick={() => go({ d: new Date() })}>
                 Today
               </Button>
-              <IconButton icon={ChevronRight} label="Next" onClick={() => step(1)} />
+              {(!isDesktop || view !== 'week') && <IconButton icon={ChevronRight} label="Next" onClick={() => step(1)} />}
             </div>
           )}
           <span className="hidden sm:contents">
@@ -162,19 +178,7 @@ export default function SchedulePage() {
         </>
       }
     >
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <Tabs<View>
-          value={view}
-          onChange={(v) => go({ v })}
-          label="Schedule view"
-          items={[
-            { id: 'week', label: 'Week', icon: Rows3 },
-            { id: 'month', label: 'Month', icon: CalendarDays },
-            { id: 'year', label: 'Year', icon: Grid3x3 },
-            { id: 'tally', label: 'Tally', icon: BarChart3 },
-          ]}
-        />
-      </div>
+      <div className="mb-4 md:hidden">{tabs}</div>
 
       {loading ? (
         <div className="grid h-64 place-items-center">
@@ -195,7 +199,8 @@ export default function SchedulePage() {
         </Card>
       ) : view === 'week' ? (
         isDesktop ? (
-          <div className="h-[calc(100dvh-13rem)]">
+          <div className="flex min-h-0 flex-1 gap-1.5">
+            <WeekArrow dir={-1} onClick={() => step(-1)} />
             <WeekView
               days={days}
               dayMap={range.days}
@@ -206,6 +211,7 @@ export default function SchedulePage() {
               onEditDay={setDayTarget}
               onUndoable={onUndoable}
             />
+            <WeekArrow dir={1} onClick={() => step(1)} />
           </div>
         ) : (
           <AgendaView
@@ -268,5 +274,21 @@ export default function SchedulePage() {
         </Suspense>
       )}
     </Page>
+  )
+}
+
+/** Full-height previous/next week strip beside the week grid. */
+function WeekArrow({ dir, onClick }: { dir: -1 | 1; onClick: () => void }) {
+  const Icon = dir < 0 ? ChevronLeft : ChevronRight
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={dir < 0 ? 'Previous week' : 'Next week'}
+      title={dir < 0 ? 'Previous week' : 'Next week'}
+      className="grid w-9 shrink-0 place-items-center rounded-2xl text-ink-faint transition-colors hover:bg-accent-soft hover:text-accent active:bg-accent-muted xl:w-11"
+    >
+      <Icon size={26} aria-hidden />
+    </button>
   )
 }

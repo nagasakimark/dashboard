@@ -43,7 +43,7 @@ const itemClass = ({ isActive }: { isActive: boolean }) =>
 /** Sidebar on desktop (lg+), icon rail on tablets (md). Hidden on phones. */
 function Sidebar() {
   return (
-    <aside className="sticky top-0 hidden h-dvh w-[4.5rem] shrink-0 flex-col border-r border-line bg-surface/80 px-3 py-4 backdrop-blur md:flex lg:w-64">
+    <aside className="sticky top-0 hidden h-dvh w-[4.5rem] shrink-0 flex-col border-r border-line bg-surface/80 px-3 py-4 backdrop-blur md:flex lg:w-52">
       <div className="lg:hidden">
         <Logo compact />
       </div>

@@ -13,7 +13,13 @@ export function SyncSection() {
       await fn()
       if (done) toast(done, { tone: 'success' })
     } catch (e) {
-      const code = (e as { code?: string }).code
+      const code = (e as { code?: string }).code ?? ''
+      const message = e instanceof Error ? e.message : String(e)
+      if (code.startsWith('auth/requests-from-referer') || /referer .* blocked/i.test(message))
+        return toast(
+          'Google blocked the sign-in window: the project’s API key needs studentpoll-a9e39.firebaseapp.com added to its allowed websites (docs/firebase/SETUP.md, “Let the sign-in window use the API key”).',
+          { tone: 'error', duration: 15000 },
+        )
       toast(
         code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request'
           ? 'Sign-in was cancelled.'
@@ -21,7 +27,7 @@ export function SyncSection() {
             ? 'Google sign-in isn’t switched on for this app yet (see docs/firebase/SETUP.md).'
             : code === 'auth/unauthorized-domain'
               ? 'This web address isn’t allowed to sign in yet (see docs/firebase/SETUP.md).'
-              : `Couldn’t turn on sync: ${e instanceof Error ? e.message : String(e)}`,
+              : `Couldn’t turn on sync: ${message}`,
         { tone: 'error' },
       )
     }

@@ -27,7 +27,7 @@ export function MonthView({ month, periods, ...c }: Common & { month: Date; peri
   for (const p of periods) if (p.kind === 'class' && p.slot !== 'lunch') classCount.set(p.date, (classCount.get(p.date) ?? 0) + 1)
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
+    <div className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-card md:flex-1">
       <div className="grid grid-cols-7 border-b border-line bg-canvas text-center text-xs font-semibold tracking-wide text-ink-faint uppercase">
         {weekdayLabels(c.weekStartsOn).map((d) => (
           <div key={d} className="py-2">
@@ -35,7 +35,7 @@ export function MonthView({ month, periods, ...c }: Common & { month: Date; peri
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-7">
+      <div className="grid min-h-0 flex-1 auto-rows-fr grid-cols-7">
         {gridDays(month, c.weekStartsOn).map((d) => {
           const k = iso(d)
           const day = c.dayMap.get(k)
@@ -48,11 +48,11 @@ export function MonthView({ month, periods, ...c }: Common & { month: Date; peri
               type="button"
               onClick={() => c.onPick(d)}
               className={cn(
-                'relative flex min-h-20 flex-col items-start gap-0.5 border-r border-b border-line p-1.5 text-left transition-colors hover:bg-canvas sm:min-h-24 sm:p-2 [&:nth-child(7n)]:border-r-0',
+                'relative flex min-h-16 flex-col items-start gap-0.5 overflow-hidden border-r border-b border-line p-1.5 text-left transition-[filter] hover:brightness-[0.97] sm:p-2 md:min-h-0 [&:nth-child(7n)]:border-r-0',
                 !inMonth && 'bg-canvas [&>span:first-child]:font-normal [&>span:first-child]:text-ink-soft',
                 isWeekend(d) && !day && 'bg-canvas/60',
               )}
-              style={school ? { backgroundColor: `color-mix(in oklab, ${school.color} 13%, white)` } : undefined}
+              style={school ? { backgroundColor: `color-mix(in oklab, ${school.color} 9%, white)` } : undefined}
               aria-label={`${format(d, 'EEEE d MMMM')}${school ? `, ${school.name}` : day?.dayType ? `, ${day.dayType}` : ''}${count ? `, ${count} classes` : ''}`}
             >
               <span
@@ -90,17 +90,17 @@ export function MonthView({ month, periods, ...c }: Common & { month: Date; peri
 export function YearView({ year, ...c }: Common & { year: number }) {
   const months = Array.from({ length: 12 }, (_, i) => new Date(year, i, 1))
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid gap-3 sm:grid-cols-2 md:min-h-0 md:flex-1 md:auto-rows-fr md:grid-cols-4 lg:grid-cols-6">
       {months.map((m) => (
         <section
           key={m.getMonth()}
-          className="rounded-2xl border border-line bg-surface p-3 shadow-card"
+          className="flex min-h-0 flex-col rounded-2xl border border-line bg-surface p-2.5 shadow-card"
           aria-label={format(m, 'MMMM yyyy')}
         >
-          <button type="button" onClick={() => c.onPick(m)} className="mb-2 text-sm font-bold text-ink hover:text-accent">
+          <button type="button" onClick={() => c.onPick(m)} className="mb-1 self-start text-sm font-bold text-ink hover:text-accent">
             {format(m, 'MMMM')}
           </button>
-          <div className="grid grid-cols-7 gap-0.5 text-center text-[10px] text-ink-faint">
+          <div className="grid min-h-0 flex-1 grid-rows-[auto] auto-rows-fr grid-cols-7 gap-0.5 text-center text-[10px] text-ink-faint">
             {weekdayLabels(c.weekStartsOn, true).map((d, i) => (
               <div key={i}>{d}</div>
             ))}
@@ -116,17 +116,24 @@ export function YearView({ year, ...c }: Common & { year: number }) {
                   onClick={() => c.onPick(d)}
                   title={school?.name ?? day?.dayType ?? undefined}
                   className={cn(
-                    'aspect-square rounded-md text-[11px] font-medium transition-transform hover:scale-110',
+                    'aspect-square rounded-md text-[11px] font-medium transition-transform hover:scale-110 md:aspect-auto md:min-h-0',
                     isToday(d) && 'ring-2 ring-accent',
                     school
-                      ? 'text-white'
+                      ? 'font-semibold'
                       : day?.kind === 'off'
                         ? 'bg-ink/10 text-ink-soft'
                         : isWeekend(d)
                           ? 'text-ink-faint/60'
                           : 'text-ink-soft hover:bg-canvas',
                   )}
-                  style={school ? { backgroundColor: school.color } : undefined}
+                  style={
+                    school
+                      ? {
+                          backgroundColor: `color-mix(in oklab, ${school.color} 28%, white)`,
+                          color: `color-mix(in oklab, ${school.color} 70%, black)`,
+                        }
+                      : undefined
+                  }
                 >
                   {format(d, 'd')}
                 </button>

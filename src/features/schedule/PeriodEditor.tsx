@@ -235,51 +235,47 @@ function PeriodForm({ target, onClose, period, day, school, onUndoable }: Props 
         </div>
 
         {kind === 'class' ? (
-          <div className="space-y-3">
-            {classesByYear.length > 0 && (
-              <div className="space-y-2" role="group" aria-label="Classes">
-                {classesByYear.map(([y, numbers]) => (
-                  <div key={y} className="flex flex-wrap items-center gap-1.5">
-                    {numbers.map((n) => {
-                      const on = year === y && classNumber === n
-                      return (
-                        <button
-                          key={n}
-                          type="button"
-                          aria-pressed={on}
-                          onClick={() => pickClass(y, n)}
-                          className={cn(
-                            'h-9 min-w-12 rounded-xl border px-2.5 text-sm font-bold transition-colors',
-                            on ? 'border-transparent text-white shadow-sm' : 'border-line bg-surface text-ink hover:bg-canvas',
-                          )}
-                          style={on ? { backgroundColor: school?.color ?? 'var(--color-accent)' } : undefined}
-                        >
-                          {y}-{n}
-                        </button>
-                      )
-                    })}
-                  </div>
-                ))}
-              </div>
-            )}
-            <Field label={classesByYear.length ? 'Or type a class' : 'Class'} hint="Year and class number, e.g. 5-1">
-              {(id) => (
-                <Input
-                  id={id}
-                  value={classText}
-                  inputMode="numeric"
-                  placeholder="5-1"
-                  className="w-32"
-                  autoFocus={!classesByYear.length}
-                  onChange={(e) => {
-                    setClassText(e.target.value)
-                    const parsed = parseClass(e.target.value)
-                    setYear(parsed?.year ?? null)
-                    setClassNumber(parsed?.classNumber ?? null)
-                  }}
-                />
-              )}
-            </Field>
+          <div className="space-y-1.5">
+            <span className="block text-xs font-semibold tracking-wide text-ink-soft uppercase">Class</span>
+            <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Classes">
+              {classesByYear.map(([y, numbers]) => (
+                <span key={y} className="inline-flex overflow-hidden rounded-lg border border-line bg-surface">
+                  {numbers.map((n) => {
+                    const on = year === y && classNumber === n
+                    return (
+                      <button
+                        key={n}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => pickClass(y, n)}
+                        className={cn(
+                          'h-8 min-w-10 border-l border-line px-2 text-sm font-bold tabular-nums transition-colors first:border-l-0',
+                          on ? 'text-white' : 'text-ink hover:bg-canvas',
+                        )}
+                        style={on ? { backgroundColor: school?.color ?? 'var(--color-accent)' } : undefined}
+                      >
+                        {y}-{n}
+                      </button>
+                    )
+                  })}
+                </span>
+              ))}
+              <Input
+                aria-label={classesByYear.length ? 'Other class' : 'Class'}
+                title="Year and class number, e.g. 5-1"
+                value={classesByYear.some(([y, ns]) => y === year && ns.includes(classNumber ?? -1)) ? '' : classText}
+                inputMode="numeric"
+                placeholder={classesByYear.length ? 'Other' : 'e.g. 5-1'}
+                className={cn('h-8 text-sm', classesByYear.length ? 'w-20' : 'w-28')}
+                autoFocus={!classesByYear.length}
+                onChange={(e) => {
+                  setClassText(e.target.value)
+                  const parsed = parseClass(e.target.value)
+                  setYear(parsed?.year ?? null)
+                  setClassNumber(parsed?.classNumber ?? null)
+                }}
+              />
+            </div>
           </div>
         ) : (
           <div className="space-y-3">

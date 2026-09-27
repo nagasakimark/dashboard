@@ -19,7 +19,7 @@ import { patch, remove, save } from '@/data/repo'
 import type { Todo } from '@/data/schema'
 import { cn } from '@/lib/cn'
 
-export function TodoList() {
+export function TodoList({ className }: { className?: string }) {
   const todos = useLiveQuery(() => db.todos.orderBy('order').toArray(), [])
   const [text, setText] = useState('')
   const sensors = useSensors(
@@ -47,7 +47,7 @@ export function TodoList() {
   }
 
   return (
-    <Card>
+    <Card className={cn('flex min-h-0 flex-col', className)}>
       <CardHeader
         icon={ListTodo}
         title="To-do"
@@ -81,7 +81,7 @@ export function TodoList() {
       </form>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={open.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-          <ul className="px-2 pb-3">
+          <ul className="min-h-0 flex-1 overflow-y-auto px-2 pb-3">
             {open.map((t) => (
               <TodoRow key={t.id} todo={t} sortable />
             ))}

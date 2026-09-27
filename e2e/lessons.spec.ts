@@ -69,11 +69,11 @@ test('creates and links a plan from a period', async ({ page }, info) => {
     .getByRole('button', { name: /Add (your first )?school/ })
     .first()
     .click()
-  const editor = page.getByRole('dialog', { name: 'Add a school' })
-  await editor.getByLabel('School name').fill('Minato ES')
-  await editor.getByRole('tab', { name: /Classes/ }).click()
+  const editor = page.getByRole('main')
+  await editor.getByLabel('Name', { exact: true }).fill('Minato ES')
   await editor.getByRole('button', { name: 'Add classes' }).click()
-  await editor.getByRole('button', { name: 'Save school' }).click()
+  await page.getByRole('button', { name: 'Save school' }).click()
+  await expect(page).toHaveURL(/#\/schools$/)
 
   await page.goto('./#/schedule?v=week&d=2026-09-28')
   await page

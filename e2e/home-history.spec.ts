@@ -20,9 +20,12 @@ test('home shows the class happening now with real times, and to-dos', async ({ 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Good morning, Test')
   await expect(page.getByText(/Happening now · Today, 8:45/)).toBeVisible()
   await expect(page.getByText('Greetings review').first()).toBeVisible()
-  const today = page.getByRole('heading', { name: 'Today' }).locator('xpath=ancestor::div[contains(@class,"rounded-card")][1]')
+  // Today's list shows only filled periods, with the live one marked.
+  const today = page.getByRole('listitem').filter({ hasText: 'Greetings review' })
   await expect(today.getByText('Now')).toBeVisible()
-  await expect(today.getByText('08:45–09:30')).toBeVisible()
+  await expect(today.getByText('8:45')).toBeVisible()
+  await expect(page.getByText('Free')).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: 'Classes taught' })).toBeVisible()
 
   await page.getByLabel('New to-do').fill('Laminate flashcards')
   await page.keyboard.press('Enter')

@@ -70,6 +70,7 @@ const router = createHashRouter([
       { path: 'links', element: page(() => import('@/features/links/LinksPage')) },
       { path: 'help', element: page(() => import('@/features/help/HelpPage')) },
       { path: 'schools', element: page(() => import('@/features/schools/SchoolsPage')) },
+      { path: 'schools/:id', element: page(() => import('@/features/schools/SchoolEditorPage')) },
       { path: 'settings', element: page(() => import('@/features/settings/SettingsPage')) },
       { path: '*', element: <Navigate to="/" replace /> },
     ],

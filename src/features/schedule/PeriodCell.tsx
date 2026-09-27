@@ -23,7 +23,11 @@ export function PeriodCellContent({ slot, period, school, plans, times, compact,
   const subtitle = period ? periodSubtitle(period, plans) : ''
 
   return (
-    <div className={cn('relative flex h-full min-h-0 w-full flex-col justify-center px-2 py-1.5 text-left', className)} style={style}>
+    <div
+      className={cn('relative flex h-full min-h-0 w-full flex-col overflow-hidden px-2 py-1.5 text-left', className)}
+      style={style}
+      title={subtitle || undefined}
+    >
       <div className="flex items-baseline justify-between gap-2 text-[11px] leading-none text-ink-faint">
         <span className="font-semibold">{slotLabel(slot, true)}</span>
         {times && (

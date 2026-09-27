@@ -55,15 +55,15 @@ export function Dialog({ open, onClose, title, description, children, footer, si
       }}
       className={cn(
         'm-0 mt-auto max-h-[92dvh] w-full max-w-none bg-transparent p-0 text-ink backdrop:animate-fade-in',
-        'sm:m-auto sm:max-h-[88dvh]',
+        'sm:m-auto sm:max-h-[90dvh]',
         widths[size],
       )}
     >
       {open && (
         <div
           className={cn(
-            'flex max-h-[92dvh] flex-col overflow-hidden rounded-t-3xl bg-surface shadow-pop animate-slide-up',
-            'sm:max-h-[88dvh] sm:rounded-3xl sm:animate-pop-in',
+            'flex max-h-[92dvh] flex-col overflow-hidden rounded-t-2xl bg-surface shadow-pop animate-slide-up',
+            'sm:max-h-[90dvh] sm:rounded-2xl sm:animate-pop-in',
             className,
           )}
         >
@@ -83,7 +83,7 @@ export function Dialog({ open, onClose, title, description, children, footer, si
           </header>
           <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 sm:px-6">{children}</div>
           {footer && (
-            <footer className="safe-bottom flex flex-wrap items-center justify-end gap-2 border-t border-line bg-canvas/60 px-5 py-3 sm:px-6">
+            <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-line bg-canvas/60 px-5 pt-3.5 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:pb-4">
               {footer}
             </footer>
           )}
