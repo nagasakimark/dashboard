@@ -1,19 +1,43 @@
 import { useMemo, useState } from 'react'
-import { addDays, format, startOfWeek, subWeeks } from 'date-fns'
+import { addDays, addWeeks, differenceInCalendarWeeks, format, startOfWeek, subWeeks } from 'date-fns'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { BarChart3, CalendarClock } from 'lucide-react'
-import { Badge, Button, Card, EmptyState, Field, Input, Select, Spinner } from '@/components/ui'
+import { BarChart3, CalendarClock, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Button, Card, EmptyState, Field, Input, Spinner } from '@/components/ui'
 import { db } from '@/data/db'
 import type { School } from '@/data/schema'
-import { fromIso, iso, schoolYearStart } from './model'
-import { classesByYear, computeTally } from './tally'
+import { fromIso, iso } from './model'
+import { tallyKey, tallyWeeks, weeklyTally } from './tally'
 
+const BORDER = '#94a3b8'
+const mix = (color: string, pct: number) => `color-mix(in oklab, ${color} ${pct}%, white)`
+const dark = (color: string) => `color-mix(in oklab, ${color} 70%, black)`
+
+function loadWeeks() {
+  try {
+    return Math.min(52, Math.max(1, Number(localStorage.getItem('tally:weeks')) || 4))
+  } catch {
+    return 4
+  }
+}
+
+/** Lessons per class per week, laid out like the original ALT Planner tally. */
 export function TallyView({ schools, weekStartsOn }: { schools: School[]; weekStartsOn: 0 | 1 }) {
   const today = new Date()
-  const [from, setFrom] = useState(iso(startOfWeek(subWeeks(today, 3), { weekStartsOn })))
-  const [to, setTo] = useState(iso(today))
-  const [schoolId, setSchoolId] = useState('')
+  const [weeksCount, setWeeksCountState] = useState(loadWeeks)
+  const [start, setStart] = useState(() => startOfWeek(subWeeks(today, weeksCount - 1), { weekStartsOn }))
+  const setWeeksCount = (n: number) => {
+    const v = Math.min(52, Math.max(1, Math.round(n) || 1))
+    setWeeksCountState(v)
+    try {
+      localStorage.setItem('tally:weeks', String(v))
+    } catch {
+      // Private mode: fine, it just isn't remembered.
+    }
+  }
 
+  const weeks = useMemo(() => tallyWeeks(start, weeksCount, weekStartsOn), [start, weeksCount, weekStartsOn])
+  const from = iso(weeks[0].start)
+  const to = iso(addDays(weeks[weeks.length - 1].start, 6))
   const data = useLiveQuery(
     async () => ({
       periods: await db.periods.where('date').between(from, to, true, true).toArray(),
@@ -21,159 +45,183 @@ export function TallyView({ schools, weekStartsOn }: { schools: School[]; weekSt
     }),
     [from, to],
   )
-  const tally = useMemo(
-    () => (data ? computeTally({ ...data, schools, from, to, schoolId: schoolId || null }) : null),
-    [data, schools, from, to, schoolId],
-  )
+  const tally = useMemo(() => (data ? weeklyTally({ ...data, schools, weeks }) : null), [data, schools, weeks])
+  const thisWeek = iso(startOfWeek(today, { weekStartsOn }))
 
-  const presets: [string, () => void][] = [
-    ['This week', () => (setFrom(iso(startOfWeek(today, { weekStartsOn }))), setTo(iso(addDays(startOfWeek(today, { weekStartsOn }), 6))))],
-    ['Last 4 weeks', () => (setFrom(iso(startOfWeek(subWeeks(today, 3), { weekStartsOn }))), setTo(iso(today)))],
-    ['This school year', () => (setFrom(iso(schoolYearStart(today))), setTo(iso(today)))],
-    ['Up to now', () => setTo(iso(today))],
-  ]
+  const upToNow = () => setWeeksCount(differenceInCalendarWeeks(today, start, { weekStartsOn }) + 1)
 
   return (
     <div className="space-y-4">
       <Card className="flex flex-wrap items-end gap-3 p-4">
-        <Field label="From">
-          {(id) => <Input id={id} type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} className="w-40" />}
-        </Field>
-        <Field label="To">
-          {(id) => <Input id={id} type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} className="w-40" />}
-        </Field>
-        <Field label="School">
+        <div className="flex gap-1.5">
+          <Button icon={ChevronLeft} onClick={() => setStart((d) => subWeeks(d, weeksCount))}>
+            Previous period
+          </Button>
+          <Button onClick={() => setStart((d) => addWeeks(d, weeksCount))}>
+            Next period
+            <ChevronRight className="size-4" aria-hidden />
+          </Button>
+        </div>
+        <Field label="Start week">
           {(id) => (
-            <Select id={id} value={schoolId} onChange={(e) => setSchoolId(e.target.value)} className="w-48">
-              <option value="">All schools</option>
-              {schools.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </Select>
+            <Input
+              id={id}
+              type="date"
+              value={from}
+              onChange={(e) => e.target.value && setStart(startOfWeek(fromIso(e.target.value), { weekStartsOn }))}
+              className="w-40"
+            />
           )}
         </Field>
-        <div className="flex flex-wrap gap-1.5">
-          {presets.map(([label, run]) => (
-            <Button key={label} size="sm" variant="ghost" icon={label === 'Up to now' ? CalendarClock : undefined} onClick={run}>
-              {label}
-            </Button>
-          ))}
-        </div>
+        <Field label="Weeks">
+          {(id) => (
+            <Input
+              id={id}
+              type="number"
+              min={1}
+              max={52}
+              value={weeksCount}
+              onChange={(e) => setWeeksCount(Number(e.target.value))}
+              className="w-20"
+            />
+          )}
+        </Field>
+        <Button variant="ghost" icon={CalendarClock} onClick={upToNow} disabled={start > today} title="Show every week up to this one">
+          Up to now
+        </Button>
+        <p className="ml-auto self-center text-sm text-ink-soft">
+          {format(weeks[0].first, 'd MMM yyyy')} – {format(weeks[weeks.length - 1].last, 'd MMM yyyy')}
+        </p>
       </Card>
 
       {!tally ? (
         <div className="grid h-40 place-items-center">
           <Spinner />
         </div>
-      ) : tally.schools.length === 0 && tally.activities.size === 0 ? (
+      ) : tally.groups.length === 0 ? (
         <Card>
-          <EmptyState
-            icon={BarChart3}
-            title="Nothing scheduled in this range"
-            description={`${format(fromIso(from), 'd MMM yyyy')} to ${format(fromIso(to), 'd MMM yyyy')}`}
-          />
+          <EmptyState icon={BarChart3} title="No classes taught in these weeks" description="Try earlier weeks, or more of them." />
         </Card>
       ) : (
-        <>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Stat label="Lessons" value={tally.totalLessons} />
-            <Stat label="School days" value={tally.schools.reduce((n, s) => n + s.days, 0)} />
-            <Stat label="Lunches" value={tally.schools.reduce((n, s) => n + s.lunches, 0)} />
-            <Stat label="Other activities" value={[...tally.activities.values()].reduce((a, b) => a + b, 0)} />
-          </div>
-
-          {tally.schools.map((t) => (
-            <Card key={t.school.id} className="overflow-hidden">
-              <div
-                className="flex flex-wrap items-center gap-3 border-b border-line px-5 py-3"
-                style={{ backgroundColor: `color-mix(in oklab, ${t.school.color} 8%, white)` }}
-              >
-                <span className="size-3 rounded-full" style={{ backgroundColor: t.school.color }} aria-hidden />
-                <h3 className="font-semibold text-ink">{t.school.name}</h3>
-                <span className="text-sm text-ink-soft">
-                  {plural(t.lessons, 'lesson')} · {plural(t.days, 'day')}
-                  {t.lunches ? ` · ${plural(t.lunches, 'lunch', 'lunches')}` : ''}
-                </span>
-                <div className="ml-auto flex flex-wrap gap-1.5">
-                  {[...t.byJte].map(([name, n]) => (
-                    <Badge key={name}>
-                      {name}: {n}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-              <div className="overflow-x-auto p-4">
-                <table className="text-sm">
-                  <tbody>
-                    {classesByYear(t).map(([year, list]) => (
-                      <tr key={year}>
-                        <th scope="row" className="pr-4 pb-2 text-left font-semibold whitespace-nowrap text-ink-soft">
-                          Year {year}
-                        </th>
-                        {list.map((c) => (
-                          <td key={c.classNumber} className="pr-2 pb-2">
-                            <span className="inline-flex items-baseline gap-1.5 rounded-xl border border-line px-2.5 py-1">
-                              <span className="font-bold" style={{ color: t.school.color }}>
-                                {year}-{c.classNumber}
-                              </span>
-                              <span className="font-semibold tabular-nums">{c.count}</span>
-                            </span>
+        <Card className="overflow-x-auto p-3 sm:p-4">
+          <table className="w-full border-collapse text-sm text-ink" style={{ border: `2px solid ${BORDER}` }}>
+            <caption className="sr-only">Lessons per class per week</caption>
+            <thead>
+              <tr>
+                <th
+                  scope="col"
+                  className="sticky left-0 z-10 w-px bg-surface px-3 py-2 text-left font-semibold whitespace-nowrap"
+                  style={{ border: `2px solid ${BORDER}` }}
+                >
+                  School
+                </th>
+                {tally.groups.map(({ school, classes }) => (
+                  <th
+                    key={school.id}
+                    scope="colgroup"
+                    colSpan={classes.length}
+                    className="px-2 py-2 font-bold whitespace-nowrap"
+                    style={{ backgroundColor: mix(school.color, 20), color: dark(school.color), border: `2px solid ${BORDER}` }}
+                  >
+                    {school.name}
+                  </th>
+                ))}
+              </tr>
+              <tr>
+                <th
+                  scope="col"
+                  className="sticky left-0 z-10 h-16 min-w-32 bg-surface p-0 text-xs font-semibold text-ink-soft"
+                  style={{ border: `2px solid ${BORDER}` }}
+                >
+                  <svg className="absolute inset-0 size-full" preserveAspectRatio="none" viewBox="0 0 100 100" aria-hidden>
+                    <line x1="0" y1="0" x2="100" y2="100" stroke={BORDER} strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+                  </svg>
+                  <span className="absolute top-1.5 right-2">Class</span>
+                  <span className="absolute bottom-1.5 left-2">Week</span>
+                  <span className="sr-only">Week / Class</span>
+                </th>
+                {tally.groups.map(({ school, classes }) =>
+                  classes.map((c, i) => (
+                    <th
+                      key={`${school.id}-${c}`}
+                      scope="col"
+                      className="min-w-9 px-1 py-2 font-bold"
+                      style={{
+                        backgroundColor: mix(school.color, 10),
+                        borderBottom: `2px solid ${BORDER}`,
+                        borderRight: i === classes.length - 1 ? `2px solid ${BORDER}` : '1px solid #cbd5e1',
+                      }}
+                    >
+                      <span className="inline-block -rotate-90 whitespace-nowrap tabular-nums">{c}</span>
+                    </th>
+                  )),
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {tally.rows.map(({ week, counts }) => {
+                const current = iso(week.start) === thisWeek
+                return (
+                  <tr key={iso(week.start)}>
+                    <th
+                      scope="row"
+                      className="sticky left-0 z-10 bg-surface px-3 py-1.5 text-left font-medium whitespace-nowrap"
+                      style={{ borderRight: `2px solid ${BORDER}`, borderBottom: '1px solid #cbd5e1' }}
+                    >
+                      {format(week.first, 'MMM d')} – {format(week.last, 'MMM d')}
+                      {current && (
+                        <span className="ml-2 rounded-full bg-accent-soft px-1.5 py-0.5 text-[11px] font-bold text-accent">Now</span>
+                      )}
+                    </th>
+                    {tally.groups.map(({ school, classes }) =>
+                      classes.map((c, i) => {
+                        const n = counts.get(tallyKey(school.id, c)) ?? 0
+                        return (
+                          <td
+                            key={`${school.id}-${c}`}
+                            className={n ? 'h-9 text-center font-bold tabular-nums' : 'h-9 text-center text-ink-soft'}
+                            style={{
+                              backgroundColor: mix(school.color, n ? 22 : 7),
+                              borderRight: i === classes.length - 1 ? `2px solid ${BORDER}` : '1px solid #cbd5e1',
+                              borderBottom: '1px solid #cbd5e1',
+                            }}
+                          >
+                            {n || '–'}
                           </td>
-                        ))}
-                        <td className="pb-2 pl-2 text-xs whitespace-nowrap text-ink-faint">= {list.reduce((n, c) => n + c.count, 0)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
-          ))}
-
-          {(tally.activities.size > 0 || tally.dayTypes.size > 0) && (
-            <Card className="grid gap-4 p-5 sm:grid-cols-2">
-              <CountList title="Other activities" entries={[...tally.activities]} />
-              <CountList title="Days off & events" entries={[...tally.dayTypes]} />
-            </Card>
-          )}
-          {tally.unassignedLessons > 0 && (
-            <p className="text-sm text-ink-faint">
-              {tally.unassignedLessons} lessons are on days without a school and aren’t counted above.
-            </p>
-          )}
-        </>
+                        )
+                      }),
+                    )}
+                  </tr>
+                )
+              })}
+              <tr>
+                <th
+                  scope="row"
+                  className="sticky left-0 z-10 bg-surface px-3 py-2 text-left font-bold"
+                  style={{ borderTop: `2px solid ${BORDER}`, borderRight: `2px solid ${BORDER}` }}
+                >
+                  Total
+                </th>
+                {tally.groups.map(({ school, classes }) =>
+                  classes.map((c, i) => (
+                    <td
+                      key={`${school.id}-${c}`}
+                      className="h-10 text-center font-bold tabular-nums"
+                      style={{
+                        backgroundColor: mix(school.color, 32),
+                        borderTop: `2px solid ${BORDER}`,
+                        borderRight: i === classes.length - 1 ? `2px solid ${BORDER}` : '1px solid #cbd5e1',
+                      }}
+                    >
+                      {tally.totals.get(tallyKey(school.id, c)) ?? 0}
+                    </td>
+                  )),
+                )}
+              </tr>
+            </tbody>
+          </table>
+        </Card>
       )}
-    </div>
-  )
-}
-
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
-
-function Stat({ label, value }: { label: string; value: number }) {
-  return (
-    <Card className="p-4">
-      <p className="text-xs font-semibold tracking-wide text-ink-faint uppercase">{label}</p>
-      <p className="mt-1 text-2xl font-bold text-ink tabular-nums">{value.toLocaleString()}</p>
-    </Card>
-  )
-}
-
-function CountList({ title, entries }: { title: string; entries: [string, number][] }) {
-  if (!entries.length) return null
-  return (
-    <div>
-      <h3 className="mb-2 text-sm font-semibold text-ink">{title}</h3>
-      <ul className="space-y-1 text-sm">
-        {entries
-          .sort((a, b) => b[1] - a[1])
-          .map(([k, n]) => (
-            <li key={k} className="flex justify-between border-b border-line/60 py-1">
-              <span className="text-ink-soft">{k}</span>
-              <span className="font-semibold tabular-nums">{n}</span>
-            </li>
-          ))}
-      </ul>
     </div>
   )
 }

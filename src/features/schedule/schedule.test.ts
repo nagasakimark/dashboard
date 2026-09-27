@@ -183,6 +183,32 @@ describe('tally', async () => {
     expect(t.unassignedLessons).toBe(1)
     expect(t.totalLessons).toBe(3)
   })
+  it('builds the weekly per-class table like the original planner', async () => {
+    const { weeklyTally, tallyWeeks, tallyKey } = await import('./tally')
+    const other = { ...school, id: 's2', name: 'Other' }
+    const weeks = tallyWeeks(new Date(2026, 8, 30), 2, 1)
+    expect(weeks[0].start.getDate()).toBe(28)
+    const t = weeklyTally({
+      schools: [other, school],
+      weeks,
+      days: [day('2026-09-28', 's1'), day('2026-10-06', 's1'), day('2026-10-07', 's2')],
+      periods: [
+        per('2026-09-28', 1, { year: 6, classNumber: 2 }),
+        per('2026-09-28', 2, { year: 5, classNumber: 1 }),
+        per('2026-09-28', 'lunch', { year: 5, classNumber: 1 }),
+        per('2026-10-06', 1, { year: 5, classNumber: 1 }),
+        per('2026-10-07', 1, { year: 1, classNumber: 1 }),
+        per('2026-10-20', 1, { year: 5, classNumber: 1 }),
+      ],
+    })
+    expect(t.groups.map((g) => [g.school.id, g.classes])).toEqual([
+      ['s2', ['1-1']],
+      ['s1', ['5-1', '6-2']],
+    ])
+    expect(t.rows.map((r) => r.counts.get(tallyKey('s1', '5-1')) ?? 0)).toEqual([1, 1])
+    expect(t.totals.get(tallyKey('s1', '5-1'))).toBe(2)
+    expect(t.totals.get(tallyKey('s1', '6-2'))).toBe(1)
+  })
 })
 
 describe('upcoming', async () => {

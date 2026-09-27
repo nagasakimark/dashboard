@@ -1,111 +1,58 @@
 import { useEffect, useState } from 'react'
 import { pdf } from '@react-pdf/renderer'
-import { addDays, eachWeekOfInterval, format, startOfWeek, subWeeks } from 'date-fns'
+import { addDays, addWeeks, differenceInCalendarWeeks, format, startOfMonth, startOfWeek, subWeeks } from 'date-fns'
 import { Download, FileText, RefreshCw } from 'lucide-react'
-import { Button, Dialog, Field, Input, Select, Spinner, Switch, useFeedback, ButtonLink } from '@/components/ui'
+import { Button, Dialog, Field, Input, Spinner, Switch, useFeedback, ButtonLink } from '@/components/ui'
 import { db } from '@/data/db'
 import type { School } from '@/data/schema'
 import { getSettings } from '@/data/settings'
-import { fromIso, iso, isWeekend, schoolYearStart } from '../model'
-import { computeTally } from '../tally'
-import { classPosition, progressIndex, trackedClasses } from '@/features/curriculum/model'
+import { fromIso, iso, schoolYearStart } from '../model'
+import { tallyWeeks, weeklyTally } from '../tally'
 import { hasJapanese, registerJapaneseFont } from './fonts'
 import { ReportDocument, type ReportData } from './ReportDocument'
 
 interface Options {
-  from: string
-  to: string
-  schoolId: string
-  weekly: boolean
+  start: string
+  weeks: number
   notes: boolean
-  title: string
 }
 
 async function buildReport(o: Options, schools: School[]): Promise<ReportData> {
   const settings = await getSettings()
-  const [periodList, dayList, planList] = await Promise.all([
-    db.periods.where('date').between(o.from, o.to, true, true).toArray(),
-    db.dayAssignments.where('date').between(o.from, o.to, true, true).toArray(),
+  const weeks = tallyWeeks(fromIso(o.start), o.weeks, settings.weekStartsOn)
+  const from = iso(weeks[0].start)
+  const to = iso(addDays(weeks[weeks.length - 1].start, 6))
+  const [periods, days, planList] = await Promise.all([
+    db.periods.where('date').between(from, to, true, true).toArray(),
+    db.dayAssignments.where('date').between(from, to, true, true).toArray(),
     db.lessonPlans.toArray(),
   ])
-  const inSchool = (date: string) => !o.schoolId || dayList.find((d) => d.date === date)?.schoolId === o.schoolId
-  const periods = periodList.filter((p) => inSchool(p.date))
-  const days = dayList.filter((d) => !o.schoolId || d.schoolId === o.schoolId)
-  const tally = computeTally({ periods, days, schools, from: o.from, to: o.to, schoolId: o.schoolId || null })
-
-  const used = new Set([...days.map((d) => d.date), ...periods.map((p) => p.date)])
-  const weekStartsOn = settings.weekStartsOn
-  const weeks = o.weekly
-    ? eachWeekOfInterval({ start: fromIso(o.from), end: fromIso(o.to) }, { weekStartsOn })
-        .map((start) => {
-          const all = Array.from({ length: 7 }, (_, i) => addDays(start, i)).filter((d) => iso(d) >= o.from && iso(d) <= o.to)
-          return { start, days: all.filter((d) => !isWeekend(d) || used.has(iso(d))) }
-        })
-        .filter((w) => w.days.some((d) => used.has(iso(d))))
-    : []
-
   const plans = new Map(planList.map((p) => [p.id, p]))
-
-  const [curricula, items, progress] = await Promise.all([db.curricula.toArray(), db.curriculumItems.toArray(), db.classProgress.toArray()])
-  const index = progressIndex(progress)
-  const curriculumRows = curricula
-    .map((c) => {
-      const list = items.filter((i) => i.curriculumId === c.id).sort((a, b) => a.order - b.order)
-      const rows = trackedClasses(c, schools)
-        .filter((t) => !o.schoolId || t.school.id === o.schoolId)
-        .map((t) => {
-          const pos = classPosition(list, index, t.key)
-          return {
-            label: t.schoolLabel ? `${t.school.name.split(/\s+/).pop()} ${t.label}` : t.label,
-            color: t.school.color,
-            done: pos.done,
-            total: pos.total,
-            next: pos.next?.text ?? null,
-          }
-        })
-      return { name: c.name, rows }
-    })
-    .filter((c) => c.rows.length && c.rows.some((r) => r.total))
-  const school = schools.find((s) => s.id === o.schoolId)
   const allText = [
-    o.title,
     settings.profileName,
     ...schools.map((s) => s.name + s.jtes.map((j) => j.name).join('')),
     ...(o.notes ? periods.map((p) => p.summary + (p.lessonPlanId ? (plans.get(p.lessonPlanId)?.title ?? '') : '')) : []),
     ...days.map((d) => d.note + (d.dayType ?? '')),
+    ...periods.map((p) => p.specialType ?? ''),
   ].join(' ')
 
   return {
-    title: o.title || (school ? `${school.name} teaching report` : 'Teaching report'),
     author: settings.profileName,
-    from: o.from,
-    to: o.to,
-    generatedAt: new Date(),
-    tally,
     weeks,
     days: new Map(days.map((d) => [d.date, d])),
     periods: new Map(periods.map((p) => [p.id, p])),
-    schools: new Map(schools.map((s) => [s.id, s])),
+    schools,
     plans,
+    tally: weeklyTally({ periods, days, schools, weeks }),
     includeNotes: o.notes,
-    font: hasJapanese(allText + curriculumRows.map((c) => c.name + c.rows.map((r) => r.next ?? '').join('')).join(''))
-      ? registerJapaneseFont()
-      : 'Helvetica',
-    curricula: curriculumRows,
+    font: hasJapanese(allText) ? registerJapaneseFont() : 'Helvetica',
   }
 }
 
 export default function ReportDialog({ onClose, schools }: { onClose: () => void; schools: School[] }) {
   const { toast } = useFeedback()
   const today = new Date()
-  const [o, setO] = useState<Options>({
-    from: iso(startOfWeek(subWeeks(today, 3), { weekStartsOn: 1 })),
-    to: iso(today),
-    schoolId: '',
-    weekly: true,
-    notes: true,
-    title: '',
-  })
+  const [o, setO] = useState<Options>({ start: iso(startOfWeek(subWeeks(today, 3), { weekStartsOn: 1 })), weeks: 4, notes: true })
   const [url, setUrl] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const set = (c: Partial<Options>) => {
@@ -128,7 +75,10 @@ export default function ReportDialog({ onClose, schools }: { onClose: () => void
     }
   }
 
-  const fileName = `teaching-report-${o.from}-to-${o.to}.pdf`
+  const first = startOfWeek(fromIso(o.start), { weekStartsOn: 1 })
+  const last = addDays(addWeeks(first, o.weeks - 1), 4)
+  const fileName = `schedule-record-${iso(first)}-to-${iso(last)}.pdf`
+  const setWeeks = (n: number) => set({ weeks: Math.min(52, Math.max(1, Math.round(n) || 1)) })
 
   return (
     <Dialog
@@ -136,7 +86,7 @@ export default function ReportDialog({ onClose, schools }: { onClose: () => void
       onClose={onClose}
       size={url ? 'full' : 'md'}
       title="PDF report"
-      description="A summary of your teaching plus a timetable page for each week."
+      description="Your weekly schedule record: two weeks to a page, then the class tally."
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
@@ -152,7 +102,7 @@ export default function ReportDialog({ onClose, schools }: { onClose: () => void
               </ButtonLink>
             </>
           ) : (
-            <Button variant="primary" icon={FileText} onClick={generate} disabled={busy || o.from > o.to}>
+            <Button variant="primary" icon={FileText} onClick={generate} disabled={busy || !o.start}>
               {busy ? 'Creating…' : 'Create report'}
             </Button>
           )}
@@ -161,53 +111,47 @@ export default function ReportDialog({ onClose, schools }: { onClose: () => void
     >
       <div className={url ? 'grid gap-5 lg:grid-cols-[18rem_1fr]' : ''}>
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="From">
-              {(id) => <Input id={id} type="date" value={o.from} onChange={(e) => set({ from: e.target.value })} />}
+          <div className="grid grid-cols-[1fr_6rem] gap-3">
+            <Field label="Start week">
+              {(id) => <Input id={id} type="date" value={o.start} onChange={(e) => e.target.value && set({ start: e.target.value })} />}
             </Field>
-            <Field label="To">{(id) => <Input id={id} type="date" value={o.to} onChange={(e) => set({ to: e.target.value })} />}</Field>
+            <Field label="Weeks">
+              {(id) => <Input id={id} type="number" min={1} max={52} value={o.weeks} onChange={(e) => setWeeks(Number(e.target.value))} />}
+            </Field>
           </div>
+          <p className="text-sm text-ink-soft">
+            {format(first, 'd MMM yyyy')} – {format(last, 'd MMM yyyy')}
+          </p>
           <div className="flex flex-wrap gap-1.5">
-            <Button size="sm" variant="ghost" onClick={() => set({ to: iso(today) })}>
+            <Button size="sm" variant="ghost" onClick={() => setWeeks(differenceInCalendarWeeks(today, first, { weekStartsOn: 1 }) + 1)}>
               Up to now
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => set({ from: iso(schoolYearStart(today)), to: iso(today) })}>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                const start = startOfWeek(schoolYearStart(today), { weekStartsOn: 1 })
+                set({ start: iso(start), weeks: Math.min(52, differenceInCalendarWeeks(today, start, { weekStartsOn: 1 }) + 1) })
+              }}
+            >
               This school year
             </Button>
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => set({ from: format(new Date(today.getFullYear(), today.getMonth(), 1), 'yyyy-MM-dd'), to: iso(today) })}
+              onClick={() => {
+                const start = startOfWeek(startOfMonth(today), { weekStartsOn: 1 })
+                set({ start: iso(start), weeks: differenceInCalendarWeeks(today, start, { weekStartsOn: 1 }) + 1 })
+              }}
             >
               This month
             </Button>
           </div>
-          <Field label="School">
-            {(id) => (
-              <Select id={id} value={o.schoolId} onChange={(e) => set({ schoolId: e.target.value })}>
-                <option value="">All schools</option>
-                {schools.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </Field>
-          <Field label="Title (optional)">
-            {(id) => <Input id={id} value={o.title} placeholder="Teaching report" onChange={(e) => set({ title: e.target.value })} />}
-          </Field>
-          <Switch
-            checked={o.weekly}
-            onChange={(weekly) => set({ weekly })}
-            label="Weekly timetable pages"
-            description="One landscape page per week."
-          />
           <Switch
             checked={o.notes}
             onChange={(notes) => set({ notes })}
             label="Include lesson notes"
-            description="Summaries and lesson plan titles."
+            description="Summaries, or the lesson plan’s title."
           />
         </div>
         {(url || busy) && (

@@ -1,4 +1,6 @@
+import { addDays, addWeeks, startOfWeek } from 'date-fns'
 import type { DayAssignment, Period, School } from '@/data/schema'
+import { iso } from './model'
 
 export interface SchoolTally {
   school: School
@@ -101,4 +103,69 @@ export function classesByYear(t: SchoolTally): [number, { classNumber: number; c
   const m = new Map<number, { classNumber: number; count: number }[]>()
   for (const c of t.classes.values()) m.set(c.year, [...(m.get(c.year) ?? []), { classNumber: c.classNumber, count: c.count }])
   return [...m].sort(([a], [b]) => a - b).map(([y, list]) => [y, list.sort((a, b) => a.classNumber - b.classNumber)])
+}
+
+/** A week of the tally: its first day and the Monday–Friday span used for labels. */
+export interface TallyWeek {
+  start: Date
+  /** First and last weekday, for labels like "Jan 6 – Jan 10". */
+  first: Date
+  last: Date
+}
+
+/** `count` consecutive weeks from the week containing `start`. */
+export function tallyWeeks(start: Date, count: number, weekStartsOn: 0 | 1): TallyWeek[] {
+  const first = startOfWeek(start, { weekStartsOn })
+  const offset = weekStartsOn === 0 ? 1 : 0
+  return Array.from({ length: Math.max(1, count) }, (_, i) => {
+    const s = addWeeks(first, i)
+    return { start: s, first: addDays(s, offset), last: addDays(s, offset + 4) }
+  })
+}
+
+export interface WeeklyTally {
+  /** Schools with at least one class taught, in the user's order, each with its classes ("5-1") sorted. */
+  groups: { school: School; classes: string[] }[]
+  /** Per week, lessons keyed `${schoolId}|${class}`. */
+  rows: { week: TallyWeek; counts: Map<string, number> }[]
+  totals: Map<string, number>
+}
+
+export const tallyKey = (schoolId: string, cls: string) => `${schoolId}|${cls}`
+
+/**
+ * The original planner's tally: lessons (not lunch) per class per week, for
+ * periods on days assigned to that class's school.
+ */
+export function weeklyTally(opts: { periods: Period[]; days: DayAssignment[]; schools: School[]; weeks: TallyWeek[] }): WeeklyTally {
+  const dayByDate = new Map(opts.days.map((d) => [d.date, d]))
+  const schools = new Map(opts.schools.map((s) => [s.id, s]))
+  const classes = new Map<string, Set<string>>()
+  const totals = new Map<string, number>()
+  const rows = opts.weeks.map((week) => ({ week, counts: new Map<string, number>() }))
+  const ranges = rows.map((r) => [iso(r.week.start), iso(addDays(r.week.start, 6))] as const)
+
+  for (const p of opts.periods) {
+    if (p.kind !== 'class' || p.slot === 'lunch' || !p.year || !p.classNumber) continue
+    const i = ranges.findIndex(([a, b]) => p.date >= a && p.date <= b)
+    if (i < 0) continue
+    const schoolId = dayByDate.get(p.date)?.schoolId
+    if (!schoolId || !schools.has(schoolId)) continue
+    const cls = `${p.year}-${p.classNumber}`
+    const key = tallyKey(schoolId, cls)
+    if (!classes.has(schoolId)) classes.set(schoolId, new Set())
+    classes.get(schoolId)!.add(cls)
+    bump(rows[i].counts, key)
+    bump(totals, key)
+  }
+
+  const byNumber = (a: string, b: string) => {
+    const [ay, ac] = a.split('-').map(Number)
+    const [by, bc] = b.split('-').map(Number)
+    return ay - by || ac - bc
+  }
+  const groups = opts.schools
+    .filter((s) => classes.has(s.id))
+    .map((school) => ({ school, classes: [...classes.get(school.id)!].sort(byNumber) }))
+  return { groups, rows, totals }
 }

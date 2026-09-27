@@ -49,7 +49,7 @@ export default function HelpPage() {
             <li>
               <strong>Schedule:</strong> pick a school for each day, then tap a period to set the class, what you did and the lesson plan.
               Drag periods to move them (hold Ctrl or Alt to copy); every change can be undone. The Tally view counts lessons, and{' '}
-              <strong>PDF report</strong> makes a printable summary.
+              <strong>PDF report</strong> prints your weekly schedule record, two weeks to a page, with the class tally.
             </li>
             <li>
               <strong>Lesson plans</strong> save as you type, can hold links and small files, and print one or many at a time.{' '}
