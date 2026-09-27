@@ -39,8 +39,11 @@ export function exportFileName(date = new Date()) {
 }
 
 /** Trigger a browser download of a JSON document. */
-export function downloadJson(json: string, fileName: string) {
-  const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }))
+export const downloadJson = (json: string, fileName: string) => downloadText(json, fileName, 'application/json')
+
+/** Trigger a browser download of any text file. */
+export function downloadText(text: string, fileName: string, mime = 'text/plain') {
+  const url = URL.createObjectURL(new Blob([text], { type: `${mime};charset=utf-8` }))
   const a = Object.assign(document.createElement('a'), { href: url, download: fileName })
   document.body.append(a)
   a.click()

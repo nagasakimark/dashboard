@@ -184,3 +184,67 @@ describe('tally', async () => {
     expect(t.totalLessons).toBe(3)
   })
 })
+
+describe('upcoming', async () => {
+  const { withTimes, upcoming, current } = await import('./upcoming')
+  const s = {
+    ...school,
+    timetables: [
+      {
+        id: 'A',
+        name: 'A',
+        periods: [
+          { slot: 1, start: '08:45', end: '09:35' },
+          { slot: 2, start: '09:45', end: '10:35' },
+        ],
+        lunch: { start: '12:35', end: '13:20' },
+      },
+    ],
+  }
+  const day = {
+    id: '2026-09-28',
+    date: '2026-09-28',
+    kind: 'school',
+    schoolId: 's1',
+    timetableId: null,
+    dayType: null,
+    note: '',
+    createdAt: 0,
+    updatedAt: 0,
+  } as const
+  const mk = (date: string, slot: Period['slot'], extra: Partial<Period> = {}) =>
+    ({ ...cls(date, slot, 5, 1), ...extra, id: `${date}:${slot}`, createdAt: 0, updatedAt: 0 }) as Period
+  const timed = withTimes(
+    [
+      mk('2026-09-29', 1),
+      mk('2026-09-28', 2),
+      mk('2026-09-28', 1),
+      mk('2026-09-28', 'lunch'),
+      mk('2026-09-28', 3, { kind: 'special', year: null, classNumber: null, specialType: 'Marking' }),
+    ],
+    new Map([[day.date, day]]),
+    new Map([['s1', s]]),
+  )
+
+  it('uses real timetable times, not a fixed 8:00 + 50 min guess', () => {
+    const p1 = timed.find((t) => t.period.id === '2026-09-28:1')!
+    expect(p1.start?.getHours()).toBe(8)
+    expect(p1.start?.getMinutes()).toBe(45)
+    expect(p1.end?.getMinutes()).toBe(35)
+  })
+
+  it('lists classes that have not finished yet, in order', () => {
+    const now = new Date(2026, 8, 28, 9, 0)
+    expect(upcoming(timed, now).map((t) => t.period.id)).toEqual(['2026-09-28:1', '2026-09-28:2', '2026-09-29:1'])
+    expect(current(timed, now)?.period.id).toBe('2026-09-28:1')
+    const later = new Date(2026, 8, 28, 9, 40)
+    expect(upcoming(timed, later).map((t) => t.period.id)).toEqual(['2026-09-28:2', '2026-09-29:1'])
+    expect(current(timed, later)).toBeNull()
+    expect(upcoming(timed, later, { includeSpecial: true, includeLunch: true }).map((t) => t.period.id)).toEqual([
+      '2026-09-28:2',
+      '2026-09-28:3',
+      '2026-09-28:lunch',
+      '2026-09-29:1',
+    ])
+  })
+})
