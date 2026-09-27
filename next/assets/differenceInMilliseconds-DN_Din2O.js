@@ -1,0 +1,1 @@
+import{a as e}from"./en-US-qXq9LwzD.js";function t(t,n){return+e(t)-e(n)}export{t};
