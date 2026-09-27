@@ -214,6 +214,8 @@ export const Bookmark = base.extend({
   url: z.string(),
   image: z.string().default(''),
   order: z.number().default(0),
+  /** 'activity' = the Activities panel (class games and sites), else a bookmark. */
+  kind: z.enum(['bookmark', 'activity']).default('bookmark'),
 })
 
 /* ---------------------------------------------------------------- games */

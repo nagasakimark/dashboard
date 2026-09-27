@@ -249,9 +249,9 @@ Whichever you pick, sync is **optional and off by default**. The app works fully
 - [x] JHS Classroom Mode (`#/jhs`): NH1–3 exercise sets (reorder tiles, fill the blank, multiple choice) with Check answer, hint, Japanese translation and a teacher "Show answer"; a searchable grammar library. Links both ways with the NH presets from Phase 5 ("JHS exercises" on an NH textbook, "p.N in planner" in an exercise set) and to that unit's word games
   - ⚠️ The old JHS data has furigana flattened into the text (e.g. 動どう詞し); it's shown as it was, because splitting kanji from readings can't be done reliably without a dictionary. Source citations like "[1]" are removed
 
-### Phase 11 — Panels and settings
-- [ ] Activities (editable list of links), Bookmarks, and textbook links, which merge with the planner's textbooks
-- [ ] Settings: profile name, accent colour, date format, backgrounds, data (export, import, backups, reset) and sync
+### Phase 11 — Panels and settings ✅ (2026-09-27)
+- [x] **Links** (a planner page, and the board's dock or L): **Activities** (the 23 sites from the old panel, now editable: add, edit, reorder, remove with Undo, "Restore defaults"), **Bookmarks** (add with a picture link or upload, edit, reorder, remove) and **Textbooks** (the planner's textbooks with their digital and ALTopedia links, plus JHS mode for NH books; the old dashboard's textbook links were merged into these in Phase 3). Activities and bookmarks share the `bookmarks` table (new `kind` field)
+- [x] Settings: profile name, accent colour, date format and start screen (Phase 2), a new **Classroom board** section (daily wallpaper rotation with today's preview, snap to grid) and **Games** (reset best streaks), data (export, import, backups, reset). Sync arrives with Phase 13
 
 ### Phase 12 — Mobile, accessibility and performance
 - [ ] Every planner screen works well at 375 px (phone) and 768 px (tablet), with properly sized touch targets

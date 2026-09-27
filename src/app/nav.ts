@@ -3,6 +3,7 @@ import {
   CalendarDays,
   History,
   House,
+  Link2,
   ListChecks,
   NotebookPen,
   Presentation,
@@ -28,6 +29,7 @@ export const plannerNav: NavItem[] = [
   { to: '/curriculum', label: 'Curriculum', icon: ListChecks },
   { to: '/textbooks', label: 'Textbooks', icon: BookOpen },
   { to: '/history', label: 'Class history', icon: History },
+  { to: '/links', label: 'Links', icon: Link2 },
   { to: '/schools', label: 'Schools', icon: School },
   { to: '/settings', label: 'Settings', icon: Settings },
 ]

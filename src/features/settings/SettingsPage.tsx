@@ -6,6 +6,7 @@ import { useSettings } from '@/data/settings'
 import { useInstallPrompt } from '@/app/useInstallPrompt'
 import { cn } from '@/lib/cn'
 import { useDraft } from '@/lib/useDraft'
+import { ClassroomSection } from './ClassroomSection'
 import { DataSection } from './DataSection'
 
 const ACCENTS = ['#4f46e5', '#2563eb', '#0891b2', '#059669', '#65a30d', '#d97706', '#dc2626', '#db2777', '#9333ea', '#475569']
@@ -106,6 +107,8 @@ export default function SettingsPage() {
             </Field>
           </div>
         </Card>
+
+        <ClassroomSection />
 
         <DataSection />
 

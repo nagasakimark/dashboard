@@ -1,6 +1,6 @@
 # ALT Dashboard: handoff guide for Claude
 
-A full rebuild of the user's classroom dashboard + ALT Planner as one PWA on GitHub Pages. **Phases 0–10 are done. Start at Phase 11.** The checklist is `docs/OVERHAUL_PLAN.md`: tick boxes as work lands, mark each phase ✅ with the date, and commit the plan with the phase.
+A full rebuild of the user's classroom dashboard + ALT Planner as one PWA on GitHub Pages. **Phases 0–11 are done. Start at Phase 12.** The checklist is `docs/OVERHAUL_PLAN.md`: tick boxes as work lands, mark each phase ✅ with the date, and commit the plan with the phase.
 
 ## Where things are
 - **This repo, branch `app`:** source code. Work and push here.
@@ -69,7 +69,7 @@ E2E tests take screenshots into `test-results/shots/`; look at them to check the
 - `src/features/games/` (modes in `modes/`, lazy) and `src/features/jhs/`. Built-in data is static under `public/games/` (sets, img, jhs) with a bundled index in `src/content/games/sets.json`; regenerate with `node scripts/legacy/extract-vocab.mjs && node scripts/legacy/extract-jhs.mjs && python3 scripts/legacy/convert-images.py` (needs Pillow and the `legacy-v1` tag).
 - Custom sets live in the `vocabSets` table (Dexie v2).
 
-## Next up: Phase 11 (panels and settings)
-Activities (see `docs/legacy/dashboard-spec.md` §6 for the link list), Bookmarks (the `bookmarks` table, already migrated) and textbook links on the board, then the remaining Settings items.
+## Next up: Phase 12 (mobile, accessibility and performance)
+Audit every screen at 375 px and 768 px, keyboard and screen-reader use, and the first-load size; see the plan.
 
-Then Phases 12–14 per the plan.
+Then Phases 13–14 per the plan.

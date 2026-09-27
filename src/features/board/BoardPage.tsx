@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Spinner, useFeedback } from '@/components/ui'
+import { Dialog, Spinner, useFeedback } from '@/components/ui'
 import { db } from '@/data/db'
 import type { Widget } from '@/data/schema'
 import { useSettings } from '@/data/settings'
+import { LinksPanel, type LinksTab } from '@/features/links/LinksPanel'
 import { useSchools } from '@/features/schedule/hooks'
 import { useNow } from '@/lib/useNow'
 import { addWorkspace } from './actions'
@@ -56,6 +57,7 @@ export default function BoardPage() {
   const [adding, setAdding] = useState(false)
   const [settingsTab, setSettingsTab] = useState<BoardSettingsTab | null>(null)
   const [shortcuts, setShortcuts] = useState(false)
+  const [linksTab, setLinksTab] = useState<LinksTab | null>(null)
   const [bare, setBare] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
 
@@ -143,6 +145,7 @@ export default function BoardPage() {
       else if (k === 'd') addWidget('Drawing')
       else if (k === 'b') setSettingsTab('background')
       else if (k === 'g') navigate('/games')
+      else if (k === 'l') setLinksTab((t) => t ?? 'activities')
       else if (k === 'h') setBare((b) => !b)
       else if (k === 'f') toggleFullscreen()
       else if (k === '?') setShortcuts(true)
@@ -232,6 +235,7 @@ export default function BoardPage() {
             <Dock
               onAdd={addWidget}
               onMore={() => setAdding(true)}
+              onLinks={() => setLinksTab('activities')}
               onBackground={() => setSettingsTab('background')}
               onPresent={() => setBare(true)}
               onFullscreen={toggleFullscreen}
@@ -244,6 +248,9 @@ export default function BoardPage() {
 
       <AddWidgetDialog open={adding} onClose={() => setAdding(false)} onAdd={addWidget} />
       <ShortcutsDialog open={shortcuts} onClose={() => setShortcuts(false)} />
+      <Dialog open={linksTab !== null} onClose={() => setLinksTab(null)} title="Links" size="xl">
+        {linksTab && <LinksPanel tab={linksTab} onTab={setLinksTab} compact />}
+      </Dialog>
       {workspaces && active && (
         <BoardSettingsDialog
           tab={settingsTab}

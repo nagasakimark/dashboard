@@ -8,6 +8,7 @@ import {
   Gamepad2,
   Image,
   Keyboard,
+  Link2,
   Layers,
   MonitorPlay,
   Plus,
@@ -115,6 +116,7 @@ export function WorkspaceSwitcher({
 export function Dock({
   onAdd,
   onMore,
+  onLinks,
   onBackground,
   onPresent,
   onFullscreen,
@@ -122,6 +124,7 @@ export function Dock({
 }: {
   onAdd: (type: string) => void
   onMore: () => void
+  onLinks: () => void
   onBackground: () => void
   onPresent: () => void
   onFullscreen: () => void
@@ -151,6 +154,11 @@ export function Dock({
         <span className="sr-only lg:hidden">More widgets</span>
       </button>
       <span className="mx-1 h-8 w-px shrink-0 bg-white/20" aria-hidden />
+      <button type="button" className={item} onClick={onLinks} title="Activities, bookmarks and textbooks (L)">
+        <Link2 size={20} aria-hidden />
+        <span className="hidden lg:block">Links</span>
+        <span className="sr-only lg:hidden">Links</span>
+      </button>
       <Link to="/games" className={item} title="Vocabulary games and JHS mode (G)">
         <Gamepad2 size={20} aria-hidden />
         <span className="hidden lg:block">Games</span>
@@ -180,6 +188,7 @@ const SHORTCUTS: [string, string][] = [
   ['D', 'Draw on the board'],
   ['[  ]', 'Previous / next workspace'],
   ['G', 'Games'],
+  ['L', 'Activities, bookmarks and textbooks'],
   ['B', 'Background'],
   ['H', 'Hide or show the controls (projector mode)'],
   ['F', 'Full screen'],

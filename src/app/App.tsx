@@ -55,6 +55,7 @@ const router = createHashRouter([
       { path: 'textbooks', element: page(() => import('@/features/textbooks/TextbooksPage')) },
       { path: 'textbooks/:id', element: page(() => import('@/features/textbooks/TextbookDetailPage')) },
       { path: 'history', element: page(() => import('@/features/history/HistoryPage')) },
+      { path: 'links', element: page(() => import('@/features/links/LinksPage')) },
       { path: 'schools', element: page(() => import('@/features/schools/SchoolsPage')) },
       { path: 'settings', element: page(() => import('@/features/settings/SettingsPage')) },
       { path: '*', element: <Navigate to="/" replace /> },

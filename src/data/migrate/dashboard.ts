@@ -122,6 +122,7 @@ export function convertDashboard(snap: LegacyDashboardSnapshot, now = Date.now()
       url: str(b.url).trim(),
       image: str(b.image),
       order: i,
+      kind: 'bookmark' as const,
       createdAt: now,
       updatedAt: now,
     }))

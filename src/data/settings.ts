@@ -19,6 +19,8 @@ export const defaultSettings = {
   snapToGrid: true,
   /** Classroom board: class list new student widgets start with. */
   lastRosterId: '',
+  /** The default Activities list has been added (so deleting them all sticks). */
+  activitiesSeeded: false,
   /** Legacy data has been imported (or dismissed) on this device. */
   legacyMigrationDone: false,
 }
