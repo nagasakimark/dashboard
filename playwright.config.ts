@@ -11,6 +11,8 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}/dashboard/`,
     trace: 'retain-on-failure',
+    // Cloud sessions have a preinstalled Chromium; point PW_CHROMIUM at it instead of downloading.
+    ...(process.env.PW_CHROMIUM ? { launchOptions: { executablePath: process.env.PW_CHROMIUM } } : {}),
   },
   // Tests run against the production build so the service worker and
   // code splitting behave as they do on GitHub Pages.

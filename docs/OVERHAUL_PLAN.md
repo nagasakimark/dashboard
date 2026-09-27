@@ -214,19 +214,21 @@ Whichever you pick, sync is **optional and off by default**. The app works fully
   - Click any class to edit it (including its lesson plan and curriculum links)
 - [x] The "upcoming" logic is shared, ready for the board's Upcoming Lessons widget in Phase 8
 
-### Phase 8 — Classroom board
-- [ ] Workspaces: add, rename, reorder and delete, plus background rotation
-- [ ] Widget frame: drag, resize, lock, layering, full screen, and snap to a grid
-- [ ] Templates: save, apply and manage
-- [ ] Rebuild all 16 widgets to the reconstructed spec, then polish them:
-  - Time: Timer, Stopwatch, Clock
+### Phase 8 — Classroom board ✅ (2026-09-27)
+- [x] Workspaces: add, rename, reorder and delete (with Undo), a switcher with ◀ ▶ and a list, export/import as JSON (old template files still import), plus background rotation
+- [x] Widget frame: drag, resize (edges and corner, mouse and touch), lock, layering (bring to front / send to back), duplicate, reset size, focus mode (enlarges any widget over a dimmed board), and snap to a 20 px grid (can be turned off). Widgets from a bigger screen are pulled back into view
+- [x] Templates: save, apply (with Undo), rename, export and delete
+- [x] Rebuilt 15 widgets to the reconstructed spec, then polished them. **Every widget's settings are saved in `widget.config`**, as is state worth keeping (a running timer, scores, ticks, picked names, groups, drawings):
+  - Time: Timer (with a real alarm sound, which the old one lacked), Stopwatch, Clock
   - Students: Random Name, Group Maker, Scoreboard
   - Fun: Dice, Spinner
   - Display: Text, Checklist, Traffic Light, Upcoming Lessons
-  - Tools: Sound Level, Drawing, QR Code
-- [ ] Upcoming Lessons reads the planner data directly, with correct times and a click-through to the planner
-- [ ] Class rosters shared between Random Name and Group Maker, plus the planner's classes where names match
-- [ ] Keyboard shortcuts and a projector-friendly mode
+  - Tools: Sound Level, Drawing (the eraser really erases now, and "Use widgets" lets clicks through), QR Code
+  - Poll arrives with Phase 9; Poll widgets from the old board are kept (not drawn) until then
+- [x] Upcoming Lessons reads the planner data directly, with correct times from `upcoming.ts` and a click-through to that week in the schedule
+- [x] Class rosters (Board settings → Classes), shared by Random Name, Group Maker and Spinner, with an optional link to a planner class (suggested automatically when the name matches, e.g. "5-1"). New student widgets start on the class used last
+- [x] Keyboard shortcuts (N, D, [ ], B, H, F, Esc, ?, arrow keys on a title bar) and a projector mode that hides every control
+- [x] Backgrounds: the 4 gradients and 24 wallpapers from `legacy-v1`, converted to WebP (≈5.7 MB total, down from ≈60 MB) with thumbnails, cached offline on first use; daily rotation as before
 
 ### Phase 9 — Live polls
 - [ ] Update the Firebase SDK and review the **database security rules** in the Firebase console (you have access, D3; I'll give you the exact rules to paste in, or you can let me in)

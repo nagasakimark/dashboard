@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-test('home loads and navigates to the schedule placeholder', async ({ page }, info) => {
+test('home loads and navigates to the schedule', async ({ page }, info) => {
   await page.goto('./')
   await expect(page.getByRole('heading', { level: 1 })).toContainText(/Good (morning|afternoon|evening)/)
   await page.screenshot({ path: `test-results/shots/home-${info.project.name}.png`, fullPage: true })
@@ -12,7 +12,7 @@ test('home loads and navigates to the schedule placeholder', async ({ page }, in
     .first()
     .click()
   await expect(page).toHaveURL(/#\/schedule$/)
-  await expect(page.getByText('Coming in phase 4')).toBeVisible()
+  await expect(page.getByText('Add a school to start planning')).toBeVisible()
 })
 
 test('phone "More" sheet lists secondary sections', async ({ page }, info) => {

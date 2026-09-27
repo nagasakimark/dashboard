@@ -1,6 +1,6 @@
 # ALT Dashboard: handoff guide for Claude
 
-A full rebuild of the user's classroom dashboard + ALT Planner as one PWA on GitHub Pages. **Phases 0–7 are done. Start at Phase 8.** The checklist is `docs/OVERHAUL_PLAN.md`: tick boxes as work lands, mark each phase ✅ with the date, and commit the plan with the phase.
+A full rebuild of the user's classroom dashboard + ALT Planner as one PWA on GitHub Pages. **Phases 0–8 are done. Start at Phase 9.** The checklist is `docs/OVERHAUL_PLAN.md`: tick boxes as work lands, mark each phase ✅ with the date, and commit the plan with the phase.
 
 ## Where things are
 - **This repo, branch `app`:** source code. Work and push here.
@@ -18,7 +18,7 @@ A full rebuild of the user's classroom dashboard + ALT Planner as one PWA on Git
 npm ci
 npm run dev        # http://localhost:5173/dashboard/
 npm run lint && npm run typecheck && npm test
-npx playwright install chromium   # once
+npx playwright install chromium   # once (in the cloud, skip this and set PW_CHROMIUM=/opt/pw-browsers/chromium instead)
 npm run e2e        # desktop 1366, tablet 820 (touch), Pixel 7
 ```
 E2E tests take screenshots into `test-results/shots/`; look at them to check the UI. `fixtures/private/` (the real user data) is gitignored and absent in the cloud; those tests skip automatically.
@@ -55,13 +55,13 @@ E2E tests take screenshots into `test-results/shots/`; look at them to check the
 - **Old dashboard data** imports automatically from the same-origin browser databases (done).
 - **Commits:** end every commit message with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Commit per phase and push to `app`.
 
-## Next up: Phase 8 (classroom board)
-Rebuild the board to the spec in `docs/legacy/dashboard-spec.md` §2:
-- workspaces (the `workspaces` table)
-- a draggable, resizable widget frame with lock, focus mode and a transparent overlay for Drawing
-- templates, backgrounds (4 gradients + 24 wallpapers from `legacy-v1`, with daily rotation), the dock and the "Add widget" dialog
-- all 16 widgets, **saving each widget's settings in `widget.config`** (the old app lost them)
-- rosters in the `rosters` table, used by Random Name, Group Maker and Spinner
-- Upcoming Lessons built on `upcoming.ts`
+## Board (Phase 8) notes
+- Code lives in `src/features/board/`. Widget metadata (sizes, categories) is in `model.ts`, components in `registry.ts`, and each widget's saved config and defaults in `widgets/configs.ts`. Widget type strings are the old app's names ("Random Name", "QR Code"…) so migrated workspaces load as they are.
+- A widget gets `config` (saved settings merged over defaults) and `update(changes)`; put anything worth keeping in config. `useWidgets` holds the active workspace's widgets locally and autosaves 400 ms after changes.
+- Unknown widget types are kept but not drawn (the old board's Poll widgets wait for Phase 9: add `Poll` to `WIDGET_META` and the registry).
+- `getByRole` names match substrings: "Scoreboard settings" also matches "Board settings", so use `exact: true`.
 
-Then Phases 9–14 per the plan.
+## Next up: Phase 9 (live polls)
+See the plan. The Poll widget goes on the board, `src/components/QrSvg.tsx` draws QR codes, and the student page must keep answering at `/dashboard/student?room=12345`.
+
+Then Phases 10–14 per the plan.

@@ -13,6 +13,12 @@ export const defaultSettings = {
   startScreen: 'home' as 'home' | 'board' | 'last',
   lastScreen: 'home' as 'home' | 'board',
   rotateBackground: true,
+  /** Classroom board: workspace shown when the board opens. */
+  activeWorkspace: '',
+  /** Classroom board: snap widgets to a 20 px grid while moving and resizing. */
+  snapToGrid: true,
+  /** Classroom board: class list new student widgets start with. */
+  lastRosterId: '',
   /** Legacy data has been imported (or dismissed) on this device. */
   legacyMigrationDone: false,
 }
