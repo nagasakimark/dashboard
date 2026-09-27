@@ -1,0 +1,1 @@
+import{d as e}from"./index-C-xAOoc-.js";import{r as t}from"./App-O0s3FHFa.js";import{t as n}from"./ComingSoon-CynrUO1W.js";var r=e();function i(){return(0,r.jsx)(n,{title:`Settings`,icon:t,phase:2,description:`Profile, appearance, data export and import, backups and sync.`})}export{i as default};
