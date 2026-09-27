@@ -253,12 +253,13 @@ Whichever you pick, sync is **optional and off by default**. The app works fully
 - [x] **Links** (a planner page, and the board's dock or L): **Activities** (the 23 sites from the old panel, now editable: add, edit, reorder, remove with Undo, "Restore defaults"), **Bookmarks** (add with a picture link or upload, edit, reorder, remove) and **Textbooks** (the planner's textbooks with their digital and ALTopedia links, plus JHS mode for NH books; the old dashboard's textbook links were merged into these in Phase 3). Activities and bookmarks share the `bookmarks` table (new `kind` field)
 - [x] Settings: profile name, accent colour, date format and start screen (Phase 2), a new **Classroom board** section (daily wallpaper rotation with today's preview, snap to grid) and **Games** (reset best streaks), data (export, import, backups, reset). Sync arrives with Phase 13
 
-### Phase 12 — Mobile, accessibility and performance
-- [ ] Every planner screen works well at 375 px (phone) and 768 px (tablet), with properly sized touch targets
-- [ ] Classroom mode works on tablets
-- [ ] Accessibility pass: keyboard navigation, focus states, contrast, labels
-- [ ] Performance: code split per mode, heavy parts loaded only when needed, and a size target for the first load
-- [ ] Offline check: install on your phone, switch to airplane mode, and confirm everything still works
+### Phase 12 — Mobile, accessibility and performance ✅ (2026-09-27)
+- [x] Every screen checked at 375 px (phone) and 768 px (tablet) with real-looking data: no horizontal scrolling anywhere; the games header was tightened for phones. Touch targets are at least 28 px (WCAG 2.2 asks for 24)
+- [x] Classroom mode works on tablets (the board e2e tests run at 820 px with touch, and widget controls stay visible on touch screens)
+- [x] Accessibility: an automated **axe-core** check (WCAG 2.1 AA) now runs on 15 screens at desktop and phone sizes in CI (`e2e/a11y.spec.ts`). It found low contrast in the faint-text colour (now 4.9:1) and in the month view's other-month days (now shown with a muted background instead of fading); all serious issues are fixed. Keyboard focus rings, labelled controls and dialog focus handling were already in place
+- [x] Performance: every mode and page is its own chunk, and heavy parts (PDF, Firebase, games, drag-and-drop for student ranking) load only when used. React is in a separate long-lived chunk. **Size budgets** are enforced in CI (`e2e/perf.spec.ts`, first-load JavaScript, gzip): planner home ≤ 250 KB (now 228), classroom board ≤ 280 KB (259), student poll page ≤ 95 KB (82, down from 127)
+- [x] Offline check automated (`e2e/offline.spec.ts`): after the app installs its service worker, the planner, the board and a game set used earlier all load with the network off
+  - ⚠️ *For you:* a real-device check (install on your phone, airplane mode, open each part) is still worth doing once at the cutover
 
 ### Phase 13 — Sync (Option A: Firebase + Google sign-in)
 - [ ] Turn on Google as a sign-in method in the Firebase project, and add `nagasakimark.github.io` to its allowed domains

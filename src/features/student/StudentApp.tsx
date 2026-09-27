@@ -1,12 +1,17 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { Suspense, lazy, useEffect, useState, type ReactNode } from 'react'
 import { CheckCircle2, Hourglass, LogOut, Star, Vote } from 'lucide-react'
 import { studentRoomParam } from '@/app/routes'
-import { Button, Input, Spinner } from '@/components/ui'
+// Direct imports (not the ui barrel) keep the student bundle small.
+import { Button } from '@/components/ui/Button'
+import { Spinner } from '@/components/ui/Card'
+import { Input } from '@/components/ui/Field'
 import { cn } from '@/lib/cn'
 import { getPollDb, type PollDb } from '@/features/polls/db'
 import { cleanText, isRoomCode, type Poll, type Vote as VoteT } from '@/features/polls/model'
 import { checkRoom, submitVote } from '@/features/polls/session'
-import { RankList } from './RankList'
+
+// Only ranking polls need drag and drop, so its code loads on demand.
+const RankList = lazy(() => import('./RankList').then((m) => ({ default: m.RankList })))
 
 const votedKey = (room: string, pollId: string) => `voted:${room}:${pollId}`
 const hasVoted = (room: string, pollId: string) => {
@@ -188,7 +193,11 @@ function Ballot({ poll, onSubmit }: { poll: Poll; onSubmit: (v: VoteT) => Promis
           )}
         </div>
       )}
-      {poll.type === 'rank' && <RankList items={ranking} onChange={setRanking} />}
+      {poll.type === 'rank' && (
+        <Suspense fallback={<Spinner />}>
+          <RankList items={ranking} onChange={setRanking} />
+        </Suspense>
+      )}
       {poll.type === 'rating' && (
         <div role="radiogroup" aria-label="Rating" className="flex flex-wrap justify-center gap-1">
           {Array.from({ length: poll.maxStars || 5 }, (_, i) => (

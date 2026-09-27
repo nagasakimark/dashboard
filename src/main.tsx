@@ -1,7 +1,8 @@
 import { StrictMode, Suspense, lazy } from 'react'
 import { createRoot } from 'react-dom/client'
 import { isStudentRoute } from '@/app/routes'
-import { Spinner } from '@/components/ui'
+// Direct import (not the ui barrel) keeps the router out of the entry chunk.
+import { Spinner } from '@/components/ui/Card'
 import './styles/index.css'
 
 // Students joining a poll get a tiny standalone bundle; everyone else gets

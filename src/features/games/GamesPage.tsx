@@ -121,8 +121,9 @@ export default function GamesPage() {
           </button>
         )}
         {!setId && (
-          <ButtonLink to="/jhs" variant="subtle" icon={GraduationCap} size="sm">
-            JHS Classroom Mode
+          <ButtonLink to="/jhs" variant="subtle" icon={GraduationCap} size="sm" aria-label="JHS Classroom Mode">
+            <span className="hidden sm:inline">JHS Classroom Mode</span>
+            <span className="sm:hidden">JHS</span>
           </ButtonLink>
         )}
         <button

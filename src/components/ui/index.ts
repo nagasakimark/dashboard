@@ -1,4 +1,5 @@
-export { Button, ButtonLink, IconButton } from './Button'
+export { Button, IconButton } from './Button'
+export { ButtonLink } from './ButtonLink'
 export { Card, CardHeader, Badge, EmptyState, Spinner } from './Card'
 export { Dialog } from './Dialog'
 export { Field, Input, Select, Switch, Textarea } from './Field'

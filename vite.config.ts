@@ -14,6 +14,17 @@ const version = JSON.parse(readFileSync(new URL('./package.json', import.meta.ur
 export default defineConfig({
   base,
   define: { __APP_VERSION__: JSON.stringify(version) },
+  build: {
+    rolldownOptions: {
+      output: {
+        // React in its own long-lived chunk: it changes rarely, so returning
+        // visitors keep it cached across app updates.
+        advancedChunks: {
+          groups: [{ name: 'react', test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/, priority: 2 }],
+        },
+      },
+    },
+  },
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },

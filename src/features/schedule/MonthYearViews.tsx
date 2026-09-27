@@ -49,7 +49,7 @@ export function MonthView({ month, periods, ...c }: Common & { month: Date; peri
               onClick={() => c.onPick(d)}
               className={cn(
                 'relative flex min-h-20 flex-col items-start gap-0.5 border-r border-b border-line p-1.5 text-left transition-colors hover:bg-canvas sm:min-h-24 sm:p-2 [&:nth-child(7n)]:border-r-0',
-                !inMonth && 'opacity-40',
+                !inMonth && 'bg-canvas [&>span:first-child]:font-normal [&>span:first-child]:text-ink-soft',
                 isWeekend(d) && !day && 'bg-canvas/60',
               )}
               style={school ? { backgroundColor: `color-mix(in oklab, ${school.color} 13%, white)` } : undefined}
@@ -64,7 +64,10 @@ export function MonthView({ month, periods, ...c }: Common & { month: Date; peri
                 {format(d, 'd')}
               </span>
               {school && (
-                <span className="w-full truncate text-[11px] leading-tight font-semibold" style={{ color: school.color }}>
+                <span
+                  className="w-full truncate text-[11px] leading-tight font-semibold"
+                  style={{ color: `color-mix(in oklab, ${school.color} 70%, black)` }}
+                >
                   {school.name}
                 </span>
               )}
@@ -72,7 +75,7 @@ export function MonthView({ month, periods, ...c }: Common & { month: Date; peri
                 <span className="w-full truncate text-[11px] leading-tight font-medium text-ink-soft">{day.dayType}</span>
               )}
               {count > 0 && (
-                <span className="mt-auto text-[11px] text-ink-faint">
+                <span className="mt-auto text-[11px] text-ink-soft">
                   {count} class{count === 1 ? '' : 'es'}
                 </span>
               )}

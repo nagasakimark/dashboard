@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, useEffect } from 'react'
 import { createHashRouter, Navigate, RouterProvider } from 'react-router'
 import { FeedbackProvider, Spinner } from '@/components/ui'
 import { useApplyAppearance } from '@/data/settings'
@@ -21,6 +21,11 @@ const page = (load: () => Promise<{ default: React.ComponentType }>) => {
   )
 }
 
+function ReloadForStudent() {
+  useEffect(() => window.location.reload(), [])
+  return null
+}
+
 const router = createHashRouter([
   {
     path: '/print/lessons',
@@ -31,6 +36,12 @@ const router = createHashRouter([
     path: '/board',
     element: page(() => import('@/features/board/BoardPage')),
     errorElement: <RouteError />,
+  },
+  {
+    // The student page is a separate bundle chosen at load (see main.tsx):
+    // reload when it's reached from inside the app.
+    path: '/student',
+    element: <ReloadForStudent />,
   },
   {
     path: '/games',

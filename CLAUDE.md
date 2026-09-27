@@ -1,6 +1,6 @@
 # ALT Dashboard: handoff guide for Claude
 
-A full rebuild of the user's classroom dashboard + ALT Planner as one PWA on GitHub Pages. **Phases 0–11 are done. Start at Phase 12.** The checklist is `docs/OVERHAUL_PLAN.md`: tick boxes as work lands, mark each phase ✅ with the date, and commit the plan with the phase.
+A full rebuild of the user's classroom dashboard + ALT Planner as one PWA on GitHub Pages. **Phases 0–12 are done. Start at Phase 13.** The checklist is `docs/OVERHAUL_PLAN.md`: tick boxes as work lands, mark each phase ✅ with the date, and commit the plan with the phase.
 
 ## Where things are
 - **This repo, branch `app`:** source code. Work and push here.
@@ -45,6 +45,7 @@ E2E tests take screenshots into `test-results/shots/`; look at them to check the
 - Hover-only controls need `[@media(hover:hover)]:opacity-0 group-hover:opacity-100` so they stay visible on touch screens.
 - In e2e, scope clicks to the dialog (`getByRole('dialog', {name})`), since elements behind it still match. Wait for the URL after navigation-triggering actions, and match toasts via `getByRole('status').filter({hasText})`.
 - On Windows the Python `\n` and `\U` escapes bit us; in the cloud (Linux) just use the Edit tool.
+- `main.tsx` and the student page import UI components from their own files (`@/components/ui/Card`…), not the `@/components/ui` barrel, which pulls in React Router. `e2e/perf.spec.ts` enforces first-load size budgets; `e2e/a11y.spec.ts` runs axe on every main screen (new screens should be added to its list).
 - Rich text is shown through `RichTextView`, which sanitises via the TipTap schema. Never inject raw HTML.
 
 ## Decisions (from the user; don't re-ask)
@@ -69,7 +70,7 @@ E2E tests take screenshots into `test-results/shots/`; look at them to check the
 - `src/features/games/` (modes in `modes/`, lazy) and `src/features/jhs/`. Built-in data is static under `public/games/` (sets, img, jhs) with a bundled index in `src/content/games/sets.json`; regenerate with `node scripts/legacy/extract-vocab.mjs && node scripts/legacy/extract-jhs.mjs && python3 scripts/legacy/convert-images.py` (needs Pillow and the `legacy-v1` tag).
 - Custom sets live in the `vocabSets` table (Dexie v2).
 
-## Next up: Phase 12 (mobile, accessibility and performance)
-Audit every screen at 375 px and 768 px, keyboard and screen-reader use, and the first-load size; see the plan.
+## Next up: Phase 13 (sync)
+Firebase Auth (Google) + Firestore, per the plan and the "Sync" decision above. Anonymous sign-in already exists for polls (`src/features/polls/firebaseDb.ts`); console steps for the user go in `docs/firebase/SETUP.md`.
 
-Then Phases 13–14 per the plan.
+Then Phase 14 per the plan.
