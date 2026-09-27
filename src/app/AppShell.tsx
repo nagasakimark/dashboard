@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router'
-import { MoreHorizontal } from 'lucide-react'
+import { FileText, MoreHorizontal } from 'lucide-react'
 import { Dialog } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { SyncBadge } from '@/features/sync/SyncBadge'
+import { STATIQ } from './apps'
 import { boardNav, plannerNav, type NavItem } from './nav'
 
 export function AppShell() {
@@ -59,6 +60,15 @@ function Sidebar() {
         <boardNav.icon size={19} aria-hidden />
         <span className="hidden lg:inline">{boardNav.label}</span>
       </Link>
+      <a
+        href={STATIQ.url}
+        target={STATIQ.target}
+        className="mt-1.5 flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-ink-soft ring-1 ring-line transition-colors hover:bg-ink/5 hover:text-ink lg:justify-start"
+        title={`${STATIQ.name} (opens in its own window)`}
+      >
+        <FileText size={18} aria-hidden className="shrink-0 text-sky-600" />
+        <span className="hidden lg:inline">{STATIQ.name}</span>
+      </a>
 
       <nav aria-label="Main" className="mt-5 flex flex-1 flex-col gap-0.5">
         {plannerNav.map((item) => (
@@ -136,6 +146,15 @@ function BottomBar() {
               {item.label}
             </NavLink>
           ))}
+          <a
+            href={STATIQ.url}
+            target={STATIQ.target}
+            onClick={() => setMoreOpen(false)}
+            className="flex items-center gap-3 rounded-2xl border border-line px-4 py-3.5 text-sm font-semibold text-ink"
+          >
+            <FileText size={20} aria-hidden className="text-sky-600" />
+            {STATIQ.name}
+          </a>
         </div>
       </Dialog>
     </>

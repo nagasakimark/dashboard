@@ -1,6 +1,18 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
-import { BookOpen, CalendarDays, CloudUpload, Gamepad2, HardDriveDownload, Link2, Presentation, School, Sparkles, Vote } from 'lucide-react'
+import {
+  BookOpen,
+  CalendarDays,
+  CloudUpload,
+  FileText,
+  Gamepad2,
+  HardDriveDownload,
+  Link2,
+  Presentation,
+  School,
+  Sparkles,
+  Vote,
+} from 'lucide-react'
 import { Page } from '@/components/layout/Page'
 import { Card, CardHeader } from '@/components/ui'
 
@@ -110,6 +122,20 @@ export default function HelpPage() {
             <A to="/links">Links</A> keeps your classroom activities, bookmarks and textbooks' digital links in one place (also on the
             board, under Links).
           </p>
+        </Section>
+
+        <Section icon={FileText} title="Statiq Office">
+          <ul>
+            <li>
+              <strong>Statiq Office</strong> (under the Classroom board button, and in the board's dock) opens your office suite in its own
+              window, reusing it if it's already open.
+            </li>
+            <li>
+              Installed Statiq as an app? In Chrome or Edge, open the Statiq app, open its menu (⋮ or …) → <strong>App info</strong> →{' '}
+              <strong>Settings</strong>, and turn on <strong>Open supported links</strong>. The dashboard's button then opens the installed
+              app.
+            </li>
+          </ul>
         </Section>
 
         <Section icon={HardDriveDownload} title="Your data and backups">
