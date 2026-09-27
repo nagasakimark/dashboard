@@ -1,1 +1,0 @@
-import{b as e}from"./index-B-yEzzdi.js";import{u as t}from"./App-jW-kLsXF.js";import{t as n}from"./ComingSoon-B4NuLAQR.js";var r=e();function i(){return(0,r.jsx)(n,{title:`Curriculum`,icon:t,phase:6,description:`Curricula with optional links to textbook sections and per-class progress tracking.`})}export{i as default};

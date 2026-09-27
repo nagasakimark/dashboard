@@ -1,0 +1,1 @@
+import{n as e,o as t}from"./en-US-DX2JFTBv.js";import{a as n}from"./format-BeuiCOgp.js";import{t as r}from"./constructNow-DtMlRF70.js";function i(t,r,i){let[a,o]=e(i?.in,t,r);return+n(a)==+n(o)}function a(e,n){return i(t(n?.in||e,e),r(n?.in||e))}export{i as n,a as t};

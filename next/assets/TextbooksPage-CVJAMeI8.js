@@ -1,1 +1,0 @@
-import{b as e}from"./index-B-yEzzdi.js";import{f as t}from"./App-jW-kLsXF.js";import{t as n}from"./ComingSoon-B4NuLAQR.js";var r=e();function i(){return(0,r.jsx)(n,{title:`Textbooks`,icon:t,phase:5,description:`Textbooks, sections and New Horizon presets.`})}export{i as default};
