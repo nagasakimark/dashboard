@@ -282,5 +282,22 @@ Whichever you pick, sync is **optional and off by default**. The app works fully
 
 ---
 
+### Feedback round 1 ✅ (2026-09-27)
+Your 18 points after trying the preview:
+- [x] Sync: the "referer blocked" error comes from the API key's website list; SETUP.md §3 has the fix (add `studentpoll-a9e39.firebaseapp.com`). ⚠️ Needs you.
+- [x] Home and schedule fit the window with no page scrolling; notes stay inside their periods; slimmer sidebar; full-height ‹ › week arrows.
+- [x] Dialogs use the height they need; compact class picker in the period editor.
+- [x] PDF report is the old Weekly Schedule Record (title, staff overview, two weeks a page, class stats) with no summary page.
+- [x] Month and year views use light school tints.
+- [x] Tally is the original table (school column groups, rotated classes, weekly rows, totals).
+- [x] New Horizon Elementary 5 and 6 presets, filled by unit and recognised from titles like "NH5".
+- [x] Activities refresh from nagasakimark.github.io; pictures keep their shape.
+- [x] School editor rebuilt as a full page.
+- [x] Settings has an Install app button (with steps for browsers that don't offer one).
+- [x] Home: next class, today's classes (no empty periods), this week, classes taught and to-dos; no curriculum.
+- [x] Board: the original white look; Textbooks, Activities, Games, Bookmarks and Background open as small windows above the dock.
+- [x] Games: words shrink instead of wrapping; flashcards flip back before the next word; every mode tested with long words; real Let's Try and New Horizon covers; games open in a window over the board; no "+ previous units" badges.
+- [x] Statiq Office on the sidebar and the dock (opens the installed app when link capturing is on).
+
 ## Out of scope unless you ask
 Dark mode, repeating weekly timetables, Tauri or desktop builds, and multi-user or shared school accounts.
