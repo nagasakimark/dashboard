@@ -140,6 +140,8 @@ export const Curriculum = base.extend({
   textbookId: z.string().nullable().default(null),
   schoolId: z.string().nullable().default(null),
   year: z.number().int().positive().nullable().default(null),
+  /** Classes that follow this curriculum (see classKey). Empty = derive from school/year. */
+  classKeys: z.array(z.string()).default([]),
 })
 
 export const CurriculumItem = base.extend({

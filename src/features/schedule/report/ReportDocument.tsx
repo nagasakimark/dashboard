@@ -24,6 +24,8 @@ export interface ReportData {
   includeNotes: boolean
   /** Font family to use (a Japanese-capable one when needed). */
   font: string
+  /** Where each tracked class is in each curriculum. */
+  curricula: { name: string; rows: { label: string; color: string; done: number; total: number; next: string | null }[] }[]
 }
 
 const ink = '#1e2233'
@@ -188,6 +190,25 @@ function SummaryPage({ d }: { d: ReportData }) {
                 <View key={k} style={s.listRow}>
                   <Text style={s.muted}>{k}</Text>
                   <Text style={{ fontWeight: 'bold' }}>{v}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+          {d.curricula.length > 0 && (
+            <View style={{ marginBottom: 12 }}>
+              <Text style={s.h2}>Curriculum progress</Text>
+              {d.curricula.map((c) => (
+                <View key={c.name} style={{ marginBottom: 6 }} wrap={false}>
+                  <Text style={{ fontWeight: 'bold', marginBottom: 2 }}>{c.name}</Text>
+                  {c.rows.map((r) => (
+                    <View key={r.label} style={s.listRow}>
+                      <Text style={{ width: 70, color: r.color, fontWeight: 'bold' }}>{r.label}</Text>
+                      <Text style={{ flex: 1, color: soft, fontSize: 7.5 }}>{r.next ? `Next: ${r.next}` : 'Finished'}</Text>
+                      <Text style={{ fontWeight: 'bold' }}>
+                        {r.done}/{r.total}
+                      </Text>
+                    </View>
+                  ))}
                 </View>
               ))}
             </View>

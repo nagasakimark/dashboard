@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { format } from 'date-fns'
-import { ArrowRightLeft, History, Plus, Trash2 } from 'lucide-react'
+import { ArrowRightLeft, History, ListChecks, Plus, Trash2 } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Button, Dialog, Field, Input, Select, Textarea, useFeedback } from '@/components/ui'
 import { db } from '@/data/db'
-import { PERIOD_TYPES, type DayAssignment, type Period, type School, type Slot } from '@/data/schema'
+import { classKey, PERIOD_TYPES, type DayAssignment, type Period, type School, type Slot } from '@/data/schema'
+import { classPosition, progressIndex, setTaught, trackedClasses } from '@/features/curriculum/model'
+import { useSchools } from './hooks'
 import { cn } from '@/lib/cn'
 import { deletePeriod, movePeriod, savePeriod, type Undo } from './actions'
 import { daySlots, fromIso, parseClass, previousForClass, slotLabel, slotTimes, timetableFor } from './model'
@@ -41,6 +43,7 @@ function PeriodForm({ target, onClose, period, day, school, onUndoable }: Props 
   const [specialType, setSpecialType] = useState(period?.specialType ?? 'Lesson Planning')
   const [summary, setSummary] = useState(period?.summary ?? '')
   const [lessonPlanId, setLessonPlanId] = useState<string | null>(period?.lessonPlanId ?? null)
+  const [itemId, setItemId] = useState<string | null>(period?.curriculumItemId ?? null)
   const [moving, setMoving] = useState(false)
   const [moveDate, setMoveDate] = useState(target.date)
   const [moveSlot, setMoveSlot] = useState<string>(String(target.slot))
@@ -53,6 +56,28 @@ function PeriodForm({ target, onClose, period, day, school, onUndoable }: Props 
     () => (year && classNumber && history ? previousForClass(history, { ...target, year, classNumber }, school?.lunchAfter) : null),
     [history, year, classNumber, target, school?.lunchAfter],
   )
+
+  // Curricula that track this class, with their items and progress.
+  const schools = useSchools()
+  const curriculumData = useLiveQuery(async () => {
+    const [curricula, items, progress] = await Promise.all([
+      db.curricula.toArray(),
+      db.curriculumItems.toArray(),
+      db.classProgress.toArray(),
+    ])
+    return { curricula, items, index: progressIndex(progress) }
+  }, [])
+  const key = school && year && classNumber ? classKey(school.id, year, classNumber) : null
+  const curriculumOptions = useMemo(() => {
+    if (!key || !curriculumData || !schools) return []
+    return curriculumData.curricula
+      .filter((c) => trackedClasses(c, schools).some((t) => t.key === key))
+      .map((c) => {
+        const items = curriculumData.items.filter((i) => i.curriculumId === c.id).sort((a, b) => a.order - b.order)
+        return { curriculum: c, items, next: classPosition(items, curriculumData.index, key).next }
+      })
+  }, [key, curriculumData, schools])
+  const suggested = curriculumOptions.find((o) => o.next)?.next ?? null
 
   const times = slotTimes(timetableFor(school, day), target.slot)
   const heading = `${format(fromIso(target.date), 'EEE d MMM')} · ${slotLabel(target.slot)}${times ? ` · ${times.start}–${times.end}` : ''}`
@@ -94,9 +119,16 @@ function PeriodForm({ target, onClose, period, day, school, onUndoable }: Props 
       specialType: kind === 'special' ? specialType.trim() || 'Other' : null,
       summary: summary.trim(),
       lessonPlanId: kind === 'class' ? lessonPlanId : null,
-      curriculumItemId: period?.curriculumItemId ?? null,
+      curriculumItemId: kind === 'class' ? itemId : null,
     })
     onUndoable(period ? 'Period updated.' : 'Period added.', undo)
+    // Offer (never assume) to tick the curriculum item for this class.
+    const item = kind === 'class' && itemId ? curriculumData?.items.find((i) => i.id === itemId) : undefined
+    if (item && key && !curriculumData?.index.get(item.id)?.has(key))
+      toast(`Mark “${item.text}” as taught for ${year}-${classNumber}?`, {
+        duration: 12_000,
+        action: { label: 'Mark taught', onClick: () => void setTaught(item, key, true, `${target.date}:${target.slot}`) },
+      })
     onClose()
   }
 
@@ -324,6 +356,40 @@ function PeriodForm({ target, onClose, period, day, school, onUndoable }: Props 
                 <Button icon={Plus} onClick={createPlan} title="Create a new lesson plan for this class">
                   New
                 </Button>
+              </div>
+            )}
+          </Field>
+        )}
+
+        {kind === 'class' && curriculumOptions.length > 0 && (
+          <Field label="Curriculum item" hint={suggested && itemId !== suggested.id ? undefined : 'Links this lesson to your curriculum.'}>
+            {(id) => (
+              <div className="space-y-2">
+                <Select id={id} value={itemId ?? ''} onChange={(e) => setItemId(e.target.value || null)}>
+                  <option value="">None</option>
+                  {curriculumOptions.map((o) => (
+                    <optgroup key={o.curriculum.id} label={o.curriculum.name}>
+                      {o.items.map((i) => (
+                        <option key={i.id} value={i.id}>
+                          {i.text}
+                          {curriculumData?.index.get(i.id)?.has(key!) ? ' ✓' : ''}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </Select>
+                {suggested && itemId !== suggested.id && (
+                  <button
+                    type="button"
+                    onClick={() => setItemId(suggested.id)}
+                    className="flex w-full items-center gap-2 rounded-xl border border-dashed border-line px-3 py-2 text-left text-sm text-ink-soft hover:border-accent hover:bg-accent-soft/50"
+                  >
+                    <ListChecks size={16} className="shrink-0 text-accent" aria-hidden />
+                    <span>
+                      Next for {year}-{classNumber}: <span className="font-semibold text-ink">{suggested.text}</span>
+                    </span>
+                  </button>
+                )}
               </div>
             )}
           </Field>

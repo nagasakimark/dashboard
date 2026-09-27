@@ -8,6 +8,7 @@ import type { School } from '@/data/schema'
 import { getSettings } from '@/data/settings'
 import { fromIso, iso, isWeekend, schoolYearStart } from '../model'
 import { computeTally } from '../tally'
+import { classPosition, progressIndex, trackedClasses } from '@/features/curriculum/model'
 import { hasJapanese, registerJapaneseFont } from './fonts'
 import { ReportDocument, type ReportData } from './ReportDocument'
 
@@ -44,6 +45,27 @@ async function buildReport(o: Options, schools: School[]): Promise<ReportData> {
     : []
 
   const plans = new Map(planList.map((p) => [p.id, p]))
+
+  const [curricula, items, progress] = await Promise.all([db.curricula.toArray(), db.curriculumItems.toArray(), db.classProgress.toArray()])
+  const index = progressIndex(progress)
+  const curriculumRows = curricula
+    .map((c) => {
+      const list = items.filter((i) => i.curriculumId === c.id).sort((a, b) => a.order - b.order)
+      const rows = trackedClasses(c, schools)
+        .filter((t) => !o.schoolId || t.school.id === o.schoolId)
+        .map((t) => {
+          const pos = classPosition(list, index, t.key)
+          return {
+            label: t.schoolLabel ? `${t.school.name.split(/\s+/).pop()} ${t.label}` : t.label,
+            color: t.school.color,
+            done: pos.done,
+            total: pos.total,
+            next: pos.next?.text ?? null,
+          }
+        })
+      return { name: c.name, rows }
+    })
+    .filter((c) => c.rows.length && c.rows.some((r) => r.total))
   const school = schools.find((s) => s.id === o.schoolId)
   const allText = [
     o.title,
@@ -66,7 +88,10 @@ async function buildReport(o: Options, schools: School[]): Promise<ReportData> {
     schools: new Map(schools.map((s) => [s.id, s])),
     plans,
     includeNotes: o.notes,
-    font: hasJapanese(allText) ? registerJapaneseFont() : 'Helvetica',
+    font: hasJapanese(allText + curriculumRows.map((c) => c.name + c.rows.map((r) => r.next ?? '').join('')).join(''))
+      ? registerJapaneseFont()
+      : 'Helvetica',
+    curricula: curriculumRows,
   }
 }
 

@@ -309,6 +309,7 @@ export function convertPlanner(json: Json, now = Date.now()): ConversionResult<P
       textbookId: null,
       schoolId: null,
       year: null,
+      classKeys: [],
       ...stamp(c.dateCreated),
     })
     objs(c.items).forEach((item, order) =>

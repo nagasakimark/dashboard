@@ -41,6 +41,7 @@ const router = createHashRouter([
       { path: 'lessons', element: page(() => import('@/features/lessons/LessonsPage')) },
       { path: 'lessons/:id', element: page(() => import('@/features/lessons/LessonEditorPage')) },
       { path: 'curriculum', element: page(() => import('@/features/curriculum/CurriculumPage')) },
+      { path: 'curriculum/:id', element: page(() => import('@/features/curriculum/CurriculumDetailPage')) },
       { path: 'textbooks', element: page(() => import('@/features/textbooks/TextbooksPage')) },
       { path: 'textbooks/:id', element: page(() => import('@/features/textbooks/TextbookDetailPage')) },
       { path: 'history', element: page(() => import('@/features/history/HistoryPage')) },
