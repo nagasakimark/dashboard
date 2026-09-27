@@ -1,8 +1,8 @@
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ArrowLeft, Expand, GraduationCap, Languages, Presentation, Shrink } from 'lucide-react'
-import { ButtonLink, Spinner } from '@/components/ui'
+import { ArrowLeft, Expand, GraduationCap, Languages, Presentation, Shrink, X } from 'lucide-react'
+import { Button, ButtonLink, Spinner } from '@/components/ui'
 import { db } from '@/data/db'
 import { cn } from '@/lib/cn'
 import { customDeck, loadDeck, preloadImages, type Deck } from './data'
@@ -35,12 +35,19 @@ function useDeck(setId: string | null, previous: boolean) {
   return loaded?.key === key ? loaded : { deck: null, loading: true }
 }
 
-/** Vocabulary games: choose a set, choose a game, play full screen. */
-export default function GamesPage() {
+export interface GamesEmbed {
+  onClose: () => void
+  /** Switch the window to JHS Classroom Mode. */
+  toJhs: () => void
+}
+
+/** Vocabulary games: choose a set, choose a game, play. Full page, or a window on the board (`embedded`). */
+export default function GamesPage({ embedded }: { embedded?: GamesEmbed }) {
   const [params, setParams] = useSearchParams()
   const setId = params.get('set')
   const previous = params.get('prev') === '1'
   const modeId = params.get('mode')
+  const initialGroup = params.get('group')
   const [showJa, setShowJa] = useState(true)
   const [fullscreen, setFullscreen] = useState(false)
   const result = useDeck(setId, previous)
@@ -59,6 +66,7 @@ export default function GamesPage() {
         if (next.set) p.set('set', next.set)
         else p.delete('set')
         p.delete('mode')
+        p.delete('group')
       }
       if (next.prev !== undefined) {
         if (next.prev) p.set('prev', '1')
@@ -75,11 +83,17 @@ export default function GamesPage() {
   const bar = 'inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-sm font-bold transition-colors hover:bg-ink/6'
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-[linear-gradient(160deg,#eef2ff_0%,#f8fafc_45%,#ecfeff_100%)]">
+    <div
+      className={cn('flex flex-col bg-[linear-gradient(180deg,#ffffff_0%,#f4f7ff_100%)]', embedded ? 'absolute inset-0' : 'fixed inset-0')}
+    >
       <header className="flex shrink-0 flex-wrap items-center gap-1 border-b border-line/70 bg-surface/80 px-2 py-1.5 backdrop-blur sm:px-3">
         {setId ? (
           <button type="button" className={bar} onClick={() => (mode ? go({ mode: null }) : go({ set: null, prev: false }))}>
             <ArrowLeft size={18} aria-hidden /> {mode ? 'Games' : 'Word sets'}
+          </button>
+        ) : embedded ? (
+          <button type="button" className={bar} onClick={embedded.onClose}>
+            <X size={18} aria-hidden /> Close
           </button>
         ) : (
           <ButtonLink to="/board" variant="ghost" icon={Presentation} size="sm">
@@ -120,12 +134,18 @@ export default function GamesPage() {
             <Languages size={18} aria-hidden /> <span className="hidden sm:inline">日本語</span>
           </button>
         )}
-        {!setId && (
-          <ButtonLink to="/jhs" variant="subtle" icon={GraduationCap} size="sm" aria-label="JHS Classroom Mode">
-            <span className="hidden sm:inline">JHS Classroom Mode</span>
-            <span className="sm:hidden">JHS</span>
-          </ButtonLink>
-        )}
+        {!setId &&
+          (embedded ? (
+            <Button variant="subtle" icon={GraduationCap} size="sm" aria-label="JHS Classroom Mode" onClick={embedded.toJhs}>
+              <span className="hidden sm:inline">JHS Classroom Mode</span>
+              <span className="sm:hidden">JHS</span>
+            </Button>
+          ) : (
+            <ButtonLink to="/jhs" variant="subtle" icon={GraduationCap} size="sm" aria-label="JHS Classroom Mode">
+              <span className="hidden sm:inline">JHS Classroom Mode</span>
+              <span className="sm:hidden">JHS</span>
+            </ButtonLink>
+          ))}
         <button
           type="button"
           className={bar}
@@ -138,11 +158,16 @@ export default function GamesPage() {
         >
           {fullscreen ? <Shrink size={18} aria-hidden /> : <Expand size={18} aria-hidden />}
         </button>
+        {embedded && setId && (
+          <button type="button" className={bar} aria-label="Close games" onClick={embedded.onClose}>
+            <X size={18} aria-hidden />
+          </button>
+        )}
       </header>
 
       <main className="min-h-0 flex-1 overflow-y-auto">
         {!setId ? (
-          <SetPicker onPick={(c) => go({ set: c.set, prev: c.previous })} />
+          <SetPicker initialGroup={initialGroup} onPick={(c) => go({ set: c.set, prev: c.previous })} />
         ) : !deck ? (
           <div className="grid h-full place-items-center text-center">
             {'error' in result && result.error ? <p className="text-danger">{result.error}</p> : <Spinner />}

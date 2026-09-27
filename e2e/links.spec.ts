@@ -25,10 +25,12 @@ test('activities, bookmarks and textbook links, in the planner and on the board'
   await page.screenshot({ path: `test-results/shots/links-${info.project.name}.png` })
 
   await page.goto('./#/board')
-  await page.getByRole('button', { name: /^Links/ }).click()
-  const panel = page.getByRole('dialog', { name: 'Links' })
-  await panel.getByRole('tab', { name: 'Bookmarks' }).click()
-  await expect(panel.getByRole('link', { name: /Kahoot/ })).toBeVisible()
-  await panel.getByRole('tab', { name: 'Textbooks' }).click()
-  await expect(panel.getByText('No textbooks yet')).toBeVisible()
+  // On the board, each opens as a small window above its dock button.
+  await page.getByRole('button', { name: 'Bookmarks', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: 'Bookmarks' }).getByRole('link', { name: /Kahoot/ })).toBeVisible()
+  await page.getByRole('button', { name: 'Textbooks', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: 'Bookmarks' })).toBeHidden()
+  await expect(page.getByRole('dialog', { name: 'Textbooks' }).getByText('No textbooks yet')).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('dialog', { name: 'Textbooks' })).toBeHidden()
 })

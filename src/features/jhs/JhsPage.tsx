@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ArrowLeft, BookOpen, Gamepad2, Search } from 'lucide-react'
-import { ButtonLink, Input, Spinner, Tabs } from '@/components/ui'
+import { ArrowLeft, BookOpen, Gamepad2, Search, X } from 'lucide-react'
+import { Button, ButtonLink, Input, Spinner, Tabs } from '@/components/ui'
+import { cn } from '@/lib/cn'
 import { db } from '@/data/db'
 import { BUILT_IN_SETS } from '@/features/games/data'
 import { JHS_BOOKS, jhsCover, loadBook, type JhsBook } from './data'
@@ -20,8 +21,14 @@ function wordSetFor(bookId: string, page: number) {
   )
 }
 
-/** JHS Classroom Mode: New Horizon 1–3 exercise sets and grammar library. */
-export default function JhsPage() {
+export interface JhsEmbed {
+  onClose: () => void
+  /** Switch the window to the vocabulary games (optionally a word set). */
+  toGames: (set?: string) => void
+}
+
+/** JHS Classroom Mode: New Horizon 1–3 exercise sets and grammar library. Full page, or a window on the board. */
+export default function JhsPage({ embedded }: { embedded?: JhsEmbed }) {
   const [params, setParams] = useSearchParams()
   const bookId = params.get('book')
   const setId = params.get('set')
@@ -71,7 +78,9 @@ export default function JhsPage() {
   const words = set && bookId ? wordSetFor(bookId, set.page) : null
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-[linear-gradient(160deg,#f0f9ff_0%,#f8fafc_45%,#eef2ff_100%)]">
+    <div
+      className={cn('flex flex-col bg-[linear-gradient(180deg,#ffffff_0%,#f3f8ff_100%)]', embedded ? 'absolute inset-0' : 'fixed inset-0')}
+    >
       <header className="flex shrink-0 flex-wrap items-center gap-2 border-b border-line/70 bg-surface/80 px-3 py-1.5 backdrop-blur">
         {back ? (
           <button
@@ -80,6 +89,14 @@ export default function JhsPage() {
             className="inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-sm font-bold hover:bg-ink/6"
           >
             <ArrowLeft size={18} aria-hidden /> Back
+          </button>
+        ) : embedded ? (
+          <button
+            type="button"
+            onClick={() => embedded.toGames()}
+            className="inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-sm font-bold hover:bg-ink/6"
+          >
+            <ArrowLeft size={18} aria-hidden /> Games
           </button>
         ) : (
           <ButtonLink to="/games" variant="ghost" size="sm" icon={ArrowLeft}>
@@ -100,10 +117,25 @@ export default function JhsPage() {
             p.{set?.page} in planner
           </ButtonLink>
         )}
-        {words && (
-          <ButtonLink to={`/games?set=${words.id}`} size="sm" variant="subtle" icon={Gamepad2}>
-            Unit word games
-          </ButtonLink>
+        {words &&
+          (embedded ? (
+            <Button size="sm" variant="subtle" icon={Gamepad2} onClick={() => embedded.toGames(words.id)}>
+              Unit word games
+            </Button>
+          ) : (
+            <ButtonLink to={`/games?set=${words.id}`} size="sm" variant="subtle" icon={Gamepad2}>
+              Unit word games
+            </ButtonLink>
+          ))}
+        {embedded && (
+          <button
+            type="button"
+            onClick={embedded.onClose}
+            aria-label="Close JHS Classroom Mode"
+            className="grid size-10 place-items-center rounded-xl hover:bg-ink/6"
+          >
+            <X size={18} aria-hidden />
+          </button>
         )}
       </header>
 

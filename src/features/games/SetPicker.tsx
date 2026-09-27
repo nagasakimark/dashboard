@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ArrowLeft, BookOpen, Pencil, Play, Plus, Trash2 } from 'lucide-react'
-import { Badge, Button, EmptyState, IconButton, Switch, Tabs, useFeedback } from '@/components/ui'
+import { Button, EmptyState, IconButton, Switch, Tabs, useFeedback } from '@/components/ui'
 import { db } from '@/data/db'
 import { remove, save } from '@/data/repo'
 import type { VocabSet } from '@/data/schema'
 import { cn } from '@/lib/cn'
-import { BUILT_IN_SETS, ELEMENTARY_GROUPS, hasUnits, imageUrl, JHS_GROUPS, unitNumber } from './data'
+import { BUILT_IN_SETS, ELEMENTARY_GROUPS, groupCover, hasUnits, imageUrl, JHS_GROUPS } from './data'
 import { CustomSetEditor } from './CustomSetEditor'
 
 type Tab = 'elementary' | 'jhs' | 'mine'
@@ -16,9 +16,7 @@ export interface SetChoice {
   previous: boolean
 }
 
-const jhsCover = (group: string) => `${import.meta.env.BASE_URL}games/jhs/nh${group.match(/\d/)?.[0] ?? '1'}.webp`
-
-function Tile({ title, sub, cover, onClick, badge }: { title: string; sub?: string; cover: string; onClick: () => void; badge?: string }) {
+function Tile({ title, sub, cover, onClick }: { title: string; sub?: string; cover: string; onClick: () => void }) {
   return (
     <button
       type="button"
@@ -34,23 +32,20 @@ function Tile({ title, sub, cover, onClick, badge }: { title: string; sub?: stri
       </span>
       <span className="text-base leading-tight font-black text-ink">{title}</span>
       {sub && <span className="text-sm font-semibold text-accent">{sub}</span>}
-      {badge && <Badge tone="accent">{badge}</Badge>}
     </button>
   )
 }
 
 /** Choose a vocabulary set: built-in textbooks and categories, JHS unit words, or your own sets. */
-export function SetPicker({ onPick }: { onPick: (c: SetChoice) => void }) {
+export function SetPicker({ onPick, initialGroup = null }: { onPick: (c: SetChoice) => void; initialGroup?: string | null }) {
   const { toast } = useFeedback()
-  const [tab, setTab] = useState<Tab>('elementary')
-  const [group, setGroup] = useState<string | null>(null)
+  const [tab, setTab] = useState<Tab>(initialGroup?.endsWith('(JHS)') ? 'jhs' : 'elementary')
+  const [group, setGroup] = useState<string | null>(initialGroup)
   const [previous, setPrevious] = useState(false)
   const [editing, setEditing] = useState<VocabSet | 'new' | null>(null)
   const custom = useLiveQuery(() => db.vocabSets.orderBy('name').toArray(), [])
 
   const groups = tab === 'jhs' ? JHS_GROUPS : ELEMENTARY_GROUPS
-  const groupCover = (g: string) =>
-    g.endsWith('(JHS)') ? jhsCover(g) : imageUrl(BUILT_IN_SETS.find((s) => s.group === g && s.cover)?.cover ?? '')
 
   const del = async (s: VocabSet) => {
     await remove('vocabSets', s.id)
@@ -138,7 +133,6 @@ export function SetPicker({ onPick }: { onPick: (c: SetChoice) => void }) {
                 title={s.title}
                 sub={`${s.count} words`}
                 cover={s.cover ? imageUrl(s.cover) : ''}
-                badge={previous && (unitNumber(s.title) ?? 0) > 1 ? '+ previous units' : undefined}
                 onClick={() => onPick({ set: s.id, previous })}
               />
             ))}

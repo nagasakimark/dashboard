@@ -1,31 +1,39 @@
 import { expect, test } from '@playwright/test'
 
 test('choose a set and play the quiz, flashcards and memory match', async ({ page }, info) => {
+  // From the board: the dock's Games panel opens the games in a window over the board.
   await page.goto('./#/board')
-  await page.getByRole('link', { name: /Games/ }).click()
-  await expect(page).toHaveURL(/#\/games$/)
-  await page.getByRole('button', { name: /Picture Dictionary/ }).click()
-  await page.getByRole('button', { name: /^Animals/ }).click()
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Animals')
+  await page.getByRole('button', { name: 'Games', exact: true }).click()
+  await page.getByRole('dialog', { name: 'Games' }).getByRole('button', { name: 'All word sets' }).click()
+  await expect(page).toHaveURL(/#\/board\?play=games$/)
+  const game = page.getByRole('dialog', { name: 'Games' })
+  await game.getByRole('button', { name: /Picture Dictionary/ }).click()
+  await game.getByRole('button', { name: /^Animals/ }).click()
+  await expect(game.getByRole('heading', { level: 1 })).toContainText('Animals')
   await page.screenshot({ path: `test-results/shots/games-modes-${info.project.name}.png` })
 
   // Quiz: pick an answer, then next.
-  await page.getByRole('button', { name: /^Quiz/ }).click()
-  const options = page.locator('main .grid-cols-2 button')
+  await game.getByRole('button', { name: /^Quiz/ }).click()
+  const options = game.locator('main .grid-cols-2 button')
   await expect(options).toHaveCount(4)
   await options.first().click()
-  await expect(page.getByRole('button', { name: /Next/ })).toBeVisible()
-  await expect(page.getByTitle('Rounds')).toContainText('1')
+  await expect(game.getByRole('button', { name: /Next/ })).toBeVisible()
+  await expect(game.getByTitle('Rounds')).toContainText('1')
   await page.screenshot({ path: `test-results/shots/games-quiz-${info.project.name}.png` })
 
   // Switch game from the header.
-  await page.getByLabel('Game').selectOption('flashcards')
-  await page.getByRole('button', { name: 'Flip the card' }).click()
-  await expect(page.getByRole('button', { name: /Show the picture/ })).toBeVisible()
+  await game.getByLabel('Game', { exact: true }).selectOption('flashcards')
+  await game.getByRole('button', { name: 'Flip the card' }).click()
+  await expect(game.getByRole('button', { name: /Show the picture/ })).toBeVisible()
 
-  await page.getByLabel('Game').selectOption('memory')
-  await page.getByRole('button', { name: 'Start game' }).click()
-  await expect(page.getByRole('button', { name: 'Hidden card' })).toHaveCount(12)
+  await game.getByLabel('Game', { exact: true }).selectOption('memory')
+  await game.getByRole('button', { name: 'Start game' }).click()
+  await expect(game.getByRole('button', { name: 'Hidden card' })).toHaveCount(12)
+
+  // Closing returns to the board.
+  await game.getByRole('button', { name: 'Close games' }).click()
+  await expect(game).toBeHidden()
+  await expect(page).toHaveURL(/#\/board$/)
 })
 
 test('JHS unit words work in word games, and textbook units can include earlier units', async ({ page }) => {

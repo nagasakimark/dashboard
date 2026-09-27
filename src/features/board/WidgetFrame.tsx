@@ -173,7 +173,8 @@ function WidgetFrameImpl({ widget, board, snapOn, focused, zIndex, actions, bare
           }}
           onKeyDown={onKeyDown}
           className={cn(
-            'flex h-8 shrink-0 touch-none items-center gap-1 rounded-t-2xl border-b border-line/70 pr-1 pl-2.5 select-none',
+            'flex h-8 shrink-0 touch-none items-center gap-1 rounded-t-2xl border-b border-black/[0.05] pr-1 pl-2.5 select-none',
+            locked ? 'bg-amber-50/80' : 'bg-slate-50/90',
             locked || focused ? 'cursor-default' : 'cursor-grab active:cursor-grabbing',
           )}
         >

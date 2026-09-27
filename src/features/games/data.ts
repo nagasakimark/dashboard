@@ -34,6 +34,21 @@ export const JHS_GROUPS = GROUPS.filter((g) => g.endsWith('(JHS)'))
 
 const base = import.meta.env.BASE_URL
 
+/** The textbooks' real covers (from the old dashboard). */
+const BOOK_COVERS: Record<string, string> = {
+  "Let's Try 1": 'lt1',
+  "Let's Try 2": 'lt2',
+  'New Horizon 5': 'nh5',
+  'New Horizon 6': 'nh6',
+}
+
+/** Cover picture for a group of sets: the textbook's cover, or its first set's picture. */
+export function groupCover(group: string): string {
+  if (group.endsWith('(JHS)')) return `${base}games/jhs/nh${group.match(/\d/)?.[0] ?? '1'}.webp`
+  if (BOOK_COVERS[group]) return `${base}games/covers/${BOOK_COVERS[group]}.webp`
+  return imageUrl(BUILT_IN_SETS.find((s) => s.group === group && s.cover)?.cover ?? '')
+}
+
 /** URL for a card image: built-in path or a data: URL from a custom set. */
 export const imageUrl = (img: string) => (!img ? '' : img.startsWith('data:') || /^https?:/.test(img) ? img : `${base}games/img/${img}`)
 

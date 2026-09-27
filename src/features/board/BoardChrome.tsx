@@ -1,31 +1,38 @@
 import { format } from 'date-fns'
+import { useCallback, useLayoutEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode, type Ref } from 'react'
 import {
   ArrowLeft,
+  BookOpen,
+  Bookmark,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   Expand,
+  FileText,
   Gamepad2,
   Image,
   Keyboard,
-  Link2,
   Layers,
   MonitorPlay,
   Plus,
+  Puzzle,
   Settings,
   Shrink,
+  type LucideIcon,
 } from 'lucide-react'
 import { Link } from 'react-router'
 import { Dialog, Menu } from '@/components/ui'
 import type { Workspace } from '@/data/schema'
 import { cn } from '@/lib/cn'
 import { useNow } from '@/lib/useNow'
+import { STATIQ } from '@/app/apps'
 import { DOCK_TYPES } from './model'
 import { WIDGETS } from './registry'
 
-const glass = 'bg-black/30 text-white shadow-lg ring-1 ring-white/15 backdrop-blur-md'
+// The old dashboard's look: frosted white bars with slate icons.
+const glass = 'bg-white/85 text-slate-600 shadow-xl ring-1 ring-black/5 backdrop-blur-xl'
 const glassButton =
-  'inline-flex items-center justify-center gap-1.5 rounded-xl transition-colors hover:bg-white/15 active:bg-white/25 disabled:opacity-40'
+  'inline-flex items-center justify-center gap-1.5 rounded-xl transition-colors hover:bg-white hover:text-slate-900 active:bg-slate-100 disabled:opacity-40'
 
 export function TopLeft({ onSettings }: { onSettings: () => void }) {
   const now = useNow(10_000)
@@ -38,7 +45,7 @@ export function TopLeft({ onSettings }: { onSettings: () => void }) {
       <button type="button" className={cn(glassButton, 'size-9')} aria-label="Board settings" title="Board settings" onClick={onSettings}>
         <Settings size={18} aria-hidden />
       </button>
-      <time className="hidden px-2 text-lg font-bold tabular-nums sm:block" dateTime={now.toISOString()}>
+      <time className="hidden px-2 text-lg font-bold text-slate-700 tabular-nums sm:block" dateTime={now.toISOString()}>
         {format(now, 'H:mm')}
       </time>
     </div>
@@ -81,7 +88,7 @@ export function WorkspaceSwitcher({
             aria-label={`Workspace: ${active.name}`}
           >
             <span className="truncate">{active.name}</span>
-            <span className="text-xs font-medium text-white/70 tabular-nums">
+            <span className="text-xs font-medium text-slate-400 tabular-nums">
               {i + 1}/{workspaces.length}
             </span>
             <ChevronDown size={14} aria-hidden />
@@ -113,73 +120,128 @@ export function WorkspaceSwitcher({
   )
 }
 
+export type DockPanel = 'textbooks' | 'activities' | 'bookmarks' | 'games' | 'background'
+
+const PANELS: { id: DockPanel; label: string; icon: LucideIcon; key: string }[] = [
+  { id: 'textbooks', label: 'Textbooks', icon: BookOpen, key: 'T' },
+  { id: 'activities', label: 'Activities', icon: Gamepad2, key: 'L' },
+  { id: 'games', label: 'Games', icon: Puzzle, key: 'G' },
+  { id: 'bookmarks', label: 'Bookmarks', icon: Bookmark, key: '' },
+  { id: 'background', label: 'Background', icon: Image, key: 'B' },
+]
+
+/** A dock icon with the old dashboard's lift-on-hover and a label bubble. */
+function DockButton({
+  icon: Icon,
+  label,
+  hint,
+  highlight,
+  pressed,
+  ...rest
+}: {
+  icon: LucideIcon
+  label: string
+  hint?: string
+  highlight?: boolean
+  pressed?: boolean
+  ref?: Ref<HTMLButtonElement>
+} & ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      aria-expanded={pressed}
+      className={cn(
+        'group relative grid size-11 shrink-0 place-items-center rounded-xl transition-all duration-200 hover:-translate-y-1',
+        highlight ? 'bg-accent-soft text-accent hover:bg-accent-muted/60' : 'text-slate-500 hover:bg-white hover:text-slate-900',
+        pressed && 'bg-white text-accent shadow-sm ring-1 ring-slate-200',
+      )}
+      {...rest}
+    >
+      <Icon size={20} strokeWidth={2} aria-hidden className="transition-transform group-hover:scale-110" />
+      <span className="pointer-events-none absolute -top-8 rounded-md bg-slate-800 px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+        {label}
+        {hint ? <span className="ml-1 text-slate-400">{hint}</span> : null}
+      </span>
+    </button>
+  )
+}
+
+const Divider = () => <span className="mx-0.5 h-8 w-px shrink-0 bg-slate-200/80" aria-hidden />
+
 export function Dock({
   onAdd,
   onMore,
-  onLinks,
-  onBackground,
+  panel,
+  setPanel,
+  renderPanel,
   onPresent,
   onFullscreen,
   fullscreen,
 }: {
   onAdd: (type: string) => void
   onMore: () => void
-  onLinks: () => void
-  onBackground: () => void
+  panel: DockPanel | null
+  setPanel: (p: DockPanel | null) => void
+  renderPanel: (p: DockPanel, anchor: HTMLElement | null, close: () => void) => ReactNode
   onPresent: () => void
   onFullscreen: () => void
   fullscreen: boolean
 }) {
-  const item = cn(glassButton, 'h-12 min-w-12 flex-col gap-0.5 px-2 text-[10px] font-semibold')
+  const anchors = useRef(new Map<DockPanel, HTMLButtonElement>())
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null)
+  useLayoutEffect(() => setAnchor(panel ? (anchors.current.get(panel) ?? null) : null), [panel])
+  const close = useCallback(() => setPanel(null), [setPanel])
   return (
-    <nav
-      aria-label="Dock"
-      className={cn(
-        'absolute bottom-3 left-1/2 z-[9500] flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 animate-slide-up items-center gap-0.5 overflow-x-auto rounded-2xl p-1.5 [scrollbar-width:none]',
-        glass,
-      )}
-    >
-      {DOCK_TYPES.map((type) => {
-        const Icon = WIDGETS.get(type)!.icon
-        return (
-          <button key={type} type="button" className={item} onClick={() => onAdd(type)} aria-label={`Add ${type}`} title={`Add ${type}`}>
-            <Icon size={20} aria-hidden />
-            <span className="hidden whitespace-nowrap lg:block">{type}</span>
-          </button>
-        )
-      })}
-      <button type="button" className={cn(item, 'bg-white/15')} onClick={onMore} title="More widgets (N)">
-        <Plus size={20} aria-hidden />
-        <span className="hidden whitespace-nowrap lg:block">More widgets</span>
-        <span className="sr-only lg:hidden">More widgets</span>
-      </button>
-      <span className="mx-1 h-8 w-px shrink-0 bg-white/20" aria-hidden />
-      <button type="button" className={item} onClick={onLinks} title="Activities, bookmarks and textbooks (L)">
-        <Link2 size={20} aria-hidden />
-        <span className="hidden lg:block">Links</span>
-        <span className="sr-only lg:hidden">Links</span>
-      </button>
-      <Link to="/games" className={item} title="Vocabulary games and JHS mode (G)">
-        <Gamepad2 size={20} aria-hidden />
-        <span className="hidden lg:block">Games</span>
-        <span className="sr-only lg:hidden">Games</span>
-      </Link>
-      <button type="button" className={item} onClick={onBackground} title="Background (B)">
-        <Image size={20} aria-hidden />
-        <span className="hidden lg:block">Background</span>
-        <span className="sr-only lg:hidden">Background</span>
-      </button>
-      <button type="button" className={item} onClick={onPresent} title="Hide controls (H)">
-        <MonitorPlay size={20} aria-hidden />
-        <span className="hidden lg:block">Present</span>
-        <span className="sr-only lg:hidden">Present</span>
-      </button>
-      <button type="button" className={item} onClick={onFullscreen} title="Full screen (F)">
-        {fullscreen ? <Shrink size={20} aria-hidden /> : <Expand size={20} aria-hidden />}
-        <span className="hidden whitespace-nowrap lg:block">{fullscreen ? 'Exit full' : 'Full screen'}</span>
-        <span className="sr-only lg:hidden">{fullscreen ? 'Exit full screen' : 'Full screen'}</span>
-      </button>
-    </nav>
+    <>
+      <nav
+        aria-label="Dock"
+        className={cn(
+          'absolute bottom-3 left-1/2 z-[9500] flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 animate-slide-up items-center gap-0.5 overflow-x-auto rounded-2xl p-1.5 pt-2 [scrollbar-width:none]',
+          'border border-white/50 bg-white/85 shadow-2xl backdrop-blur-xl',
+        )}
+      >
+        {DOCK_TYPES.map((type) => (
+          <DockButton key={type} icon={WIDGETS.get(type)!.icon} label={`Add ${type}`} onClick={() => onAdd(type)} />
+        ))}
+        <Divider />
+        <DockButton icon={Plus} label="More widgets" hint="N" highlight onClick={onMore} />
+        <Divider />
+        {PANELS.map((p) => (
+          <DockButton
+            key={p.id}
+            ref={(el: HTMLButtonElement | null) => {
+              if (el) anchors.current.set(p.id, el)
+            }}
+            icon={p.icon}
+            label={p.label}
+            hint={p.key}
+            pressed={panel === p.id}
+            onClick={() => setPanel(panel === p.id ? null : p.id)}
+          />
+        ))}
+        <a
+          href={STATIQ.url}
+          target={STATIQ.target}
+          aria-label={STATIQ.name}
+          className="group relative grid size-11 shrink-0 place-items-center rounded-xl text-sky-600 transition-all duration-200 hover:-translate-y-1 hover:bg-white"
+        >
+          <FileText size={20} aria-hidden className="transition-transform group-hover:scale-110" />
+          <span className="pointer-events-none absolute -top-8 rounded-md bg-slate-800 px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap text-white opacity-0 transition-opacity group-hover:opacity-100">
+            {STATIQ.name}
+          </span>
+        </a>
+        <Divider />
+        <DockButton icon={MonitorPlay} label="Present" hint="H" onClick={onPresent} />
+        <DockButton
+          icon={fullscreen ? Shrink : Expand}
+          label={fullscreen ? 'Exit full screen' : 'Full screen'}
+          hint="F"
+          onClick={onFullscreen}
+        />
+      </nav>
+      {panel && anchor && renderPanel(panel, anchor, close)}
+    </>
   )
 }
 
@@ -188,7 +250,8 @@ const SHORTCUTS: [string, string][] = [
   ['D', 'Draw on the board'],
   ['[  ]', 'Previous / next workspace'],
   ['G', 'Games'],
-  ['L', 'Activities, bookmarks and textbooks'],
+  ['L', 'Activities'],
+  ['T', 'Textbooks'],
   ['B', 'Background'],
   ['H', 'Hide or show the controls (projector mode)'],
   ['F', 'Full screen'],

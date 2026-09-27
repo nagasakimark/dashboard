@@ -86,7 +86,7 @@ export default function HelpPage() {
             </li>
             <li>
               Keys: <K>N</K> add widget, <K>D</K> draw, <K>[</K> <K>]</K> workspaces, <K>H</K> hide controls for the projector, <K>F</K>{' '}
-              full screen, <K>G</K> games, <K>L</K> links, <K>?</K> all shortcuts.
+              full screen, <K>G</K> games, <K>L</K> activities, <K>T</K> textbooks, <K>?</K> all shortcuts.
             </li>
           </ul>
         </Section>
@@ -120,7 +120,7 @@ export default function HelpPage() {
         <Section icon={Link2} title="Links">
           <p>
             <A to="/links">Links</A> keeps your classroom activities, bookmarks and textbooks' digital links in one place (also on the
-            board, under Links).
+            board's dock, where each opens in a small window).
           </p>
         </Section>
 

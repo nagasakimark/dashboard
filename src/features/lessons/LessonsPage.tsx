@@ -181,7 +181,7 @@ export default function LessonsPage() {
                 {text && <p className="mt-2 line-clamp-3 text-sm text-ink-soft">{snippet(text, f.q)}</p>}
                 <div className="mt-auto flex flex-wrap items-center gap-1.5 pt-3 text-xs text-ink-faint">
                   {plan.tags.map((t) => (
-                    <span key={t} className="rounded-md bg-ink/5 px-1.5 py-0.5">
+                    <span key={t} className="rounded-md bg-ink/5 px-1.5 py-0.5 text-ink-soft">
                       #{t}
                     </span>
                   ))}

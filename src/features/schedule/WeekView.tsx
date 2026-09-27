@@ -162,11 +162,14 @@ function DayColumn({
         style={school ? { backgroundColor: `color-mix(in oklab, ${school.color} 9%, white)` } : undefined}
         title="Set the school or day type"
       >
-        <div className={cn('text-xs font-semibold tracking-wide uppercase', today ? 'text-accent' : 'text-ink-faint')}>
+        <div className={cn('text-xs font-semibold tracking-wide uppercase', today ? 'text-accent' : 'text-ink-soft')}>
           {format(date, 'EEE')}
         </div>
         <div className={cn('text-lg leading-tight font-bold', today ? 'text-accent' : 'text-ink')}>{format(date, 'd MMM')}</div>
-        <div className="mt-0.5 truncate text-xs font-semibold" style={{ color: school?.color }}>
+        <div
+          className="mt-0.5 truncate text-xs font-semibold"
+          style={school ? { color: `color-mix(in oklab, ${school.color} 72%, black)` } : undefined}
+        >
           {school ? (
             school.name
           ) : off ? (
@@ -175,7 +178,7 @@ function DayColumn({
             <span className="font-normal text-ink-faint">Set school…</span>
           )}
         </div>
-        {school && school.timetables.length > 1 && timetable && <div className="truncate text-[10px] text-ink-faint">{timetable.name}</div>}
+        {school && school.timetables.length > 1 && timetable && <div className="truncate text-[10px] text-ink-soft">{timetable.name}</div>}
         {day?.note && <div className="mt-0.5 truncate text-[11px] text-ink-soft italic">{day.note}</div>}
       </button>
 

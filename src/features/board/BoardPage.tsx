@@ -1,24 +1,40 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router'
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router'
+import { BookOpen, Bookmark, Gamepad2, Image, Puzzle, type LucideIcon } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Dialog, Spinner, useFeedback } from '@/components/ui'
+import { Spinner, useFeedback } from '@/components/ui'
 import { db } from '@/data/db'
 import type { Widget } from '@/data/schema'
 import { useSettings } from '@/data/settings'
-import { LinksPanel, type LinksTab } from '@/features/links/LinksPanel'
 import { useSchools } from '@/features/schedule/hooks'
 import { useNow } from '@/lib/useNow'
 import { addWorkspace } from './actions'
 import { AddWidgetDialog } from './AddWidgetDialog'
 import { resolveBackground } from './backgrounds'
-import { Dock, PresentExit, ShortcutsDialog, TopLeft, WorkspaceSwitcher } from './BoardChrome'
+import { Dock, PresentExit, ShortcutsDialog, TopLeft, WorkspaceSwitcher, type DockPanel } from './BoardChrome'
 import { BoardSettingsDialog } from './BoardSettingsDialog'
 import { BoardContext, type BoardContextValue, type BoardSettingsTab } from './context'
+import { DockPopover } from './DockPopover'
+import type { GameTarget } from './GamesLauncher'
+import { GameWindow } from './GameWindow'
 import { createWidget, META_BY_TYPE, widgetId } from './model'
 import { WIDGETS } from './registry'
 import { emptySource } from './rosters'
 import { useWidgets, useWorkspaces } from './useBoard'
 import { WidgetFrame, type FrameActions } from './WidgetFrame'
+
+const DockPanelContent = lazy(() => import('./DockPanelContent'))
+
+const PANEL_META: Record<DockPanel, { title: string; icon: LucideIcon; className?: string }> = {
+  textbooks: { title: 'Textbooks', icon: BookOpen },
+  activities: { title: 'Activities', icon: Gamepad2, className: 'w-[26rem]' },
+  bookmarks: { title: 'Bookmarks', icon: Bookmark, className: 'w-[26rem]' },
+  games: { title: 'Games', icon: Puzzle },
+  background: { title: 'Background', icon: Image, className: 'w-[26rem]' },
+}
+
+/** Game-window search params, cleared when it closes. */
+const PLAY_PARAMS = ['play', 'set', 'mode', 'prev', 'group', 'book', 'view']
 
 /** Types whose names come from a class list; new ones start on the last class used. */
 const NAME_WIDGETS = new Set(['Random Name', 'Group Maker'])
@@ -45,7 +61,8 @@ const isTyping = (t: EventTarget | null) =>
 /** Classroom board (full screen). */
 export default function BoardPage() {
   const { toast } = useFeedback()
-  const navigate = useNavigate()
+  const [params, setParams] = useSearchParams()
+  const play = params.get('play') === 'jhs' ? 'jhs' : params.get('play') === 'games' ? 'games' : null
   const { settings, setSetting } = useSettings()
   const { workspaces, active, select, ready } = useWorkspaces()
   const { widgets, change, get, update, updateConfig, remove, toFront, toBack } = useWidgets(active)
@@ -57,7 +74,7 @@ export default function BoardPage() {
   const [adding, setAdding] = useState(false)
   const [settingsTab, setSettingsTab] = useState<BoardSettingsTab | null>(null)
   const [shortcuts, setShortcuts] = useState(false)
-  const [linksTab, setLinksTab] = useState<LinksTab | null>(null)
+  const [panel, setPanel] = useState<DockPanel | null>(null)
   const [bare, setBare] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
 
@@ -138,14 +155,15 @@ export default function BoardPage() {
         else if (bare) setBare(false)
         return
       }
-      if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target) || !workspaces || !active) return
+      if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target) || !workspaces || !active || play) return
       const i = workspaces.findIndex((w) => w.id === active.id)
       const k = e.key.toLowerCase()
       if (k === 'n' || k === '+') setAdding(true)
       else if (k === 'd') addWidget('Drawing')
-      else if (k === 'b') setSettingsTab('background')
-      else if (k === 'g') navigate('/games')
-      else if (k === 'l') setLinksTab((t) => t ?? 'activities')
+      else if (k === 'b') setPanel((p) => (p === 'background' ? null : 'background'))
+      else if (k === 'g') setPanel((p) => (p === 'games' ? null : 'games'))
+      else if (k === 'l') setPanel((p) => (p === 'activities' ? null : 'activities'))
+      else if (k === 't') setPanel((p) => (p === 'textbooks' ? null : 'textbooks'))
       else if (k === 'h') setBare((b) => !b)
       else if (k === 'f') toggleFullscreen()
       else if (k === '?') setShortcuts(true)
@@ -156,13 +174,53 @@ export default function BoardPage() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [focusId, bare, workspaces, active, select, addWidget, toggleFullscreen, navigate])
+  }, [focusId, bare, workspaces, active, select, addWidget, toggleFullscreen, play])
 
   // Leave focus mode when the workspace changes.
   const [focusWorkspace, setFocusWorkspace] = useState(active?.id)
   if (focusWorkspace !== active?.id) {
     setFocusWorkspace(active?.id)
     setFocusId(null)
+  }
+
+  const openGame = useCallback(
+    (t: GameTarget | { play: 'games'; set?: string }) => {
+      setPanel(null)
+      setParams((p) => {
+        PLAY_PARAMS.forEach((k) => p.delete(k))
+        p.set('play', t.play)
+        if (t.play === 'jhs' && t.book) p.set('book', t.book)
+        if (t.play === 'games' && 'group' in t && t.group) p.set('group', t.group)
+        if (t.play === 'games' && 'set' in t && t.set) p.set('set', t.set)
+        return p
+      })
+    },
+    [setParams],
+  )
+  const closeGame = useCallback(
+    () =>
+      setParams((p) => {
+        PLAY_PARAMS.forEach((k) => p.delete(k))
+        return p
+      }),
+    [setParams],
+  )
+
+  const renderPanel = (p: DockPanel, anchor: HTMLElement | null, close: () => void) => {
+    const meta = PANEL_META[p]
+    return active ? (
+      <DockPopover anchor={anchor} onClose={close} title={meta.title} icon={meta.icon} className={meta.className}>
+        <Suspense
+          fallback={
+            <div className="grid h-24 w-64 place-items-center">
+              <Spinner />
+            </div>
+          }
+        >
+          <DockPanelContent panel={p} workspace={active} openGame={openGame} />
+        </Suspense>
+      </DockPopover>
+    ) : null
   }
 
   const context: BoardContextValue = useMemo(
@@ -235,8 +293,9 @@ export default function BoardPage() {
             <Dock
               onAdd={addWidget}
               onMore={() => setAdding(true)}
-              onLinks={() => setLinksTab('activities')}
-              onBackground={() => setSettingsTab('background')}
+              panel={panel}
+              setPanel={setPanel}
+              renderPanel={renderPanel}
               onPresent={() => setBare(true)}
               onFullscreen={toggleFullscreen}
               fullscreen={fullscreen}
@@ -248,9 +307,14 @@ export default function BoardPage() {
 
       <AddWidgetDialog open={adding} onClose={() => setAdding(false)} onAdd={addWidget} />
       <ShortcutsDialog open={shortcuts} onClose={() => setShortcuts(false)} />
-      <Dialog open={linksTab !== null} onClose={() => setLinksTab(null)} title="Links" size="xl">
-        {linksTab && <LinksPanel tab={linksTab} onTab={setLinksTab} compact />}
-      </Dialog>
+      {play && (
+        <GameWindow
+          kind={play}
+          onClose={closeGame}
+          toJhs={() => openGame({ play: 'jhs' })}
+          toGames={(set) => openGame({ play: 'games', set })}
+        />
+      )}
       {workspaces && active && (
         <BoardSettingsDialog
           tab={settingsTab}
