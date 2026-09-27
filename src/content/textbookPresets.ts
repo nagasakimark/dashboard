@@ -29,7 +29,12 @@ export interface TextbookPreset {
   sections: PresetSection[]
 }
 
-const unit = (n: number, title: string, topic: string): PresetSection => ({ page: 0, title: `Unit ${n}: ${title}`, topic, altopediaUrl: '' })
+const unit = (n: number, title: string, topic: string): PresetSection => ({
+  page: 0,
+  title: `Unit ${n}: ${title}`,
+  topic,
+  altopediaUrl: '',
+})
 
 export const TEXTBOOK_PRESETS: TextbookPreset[] = [
   {

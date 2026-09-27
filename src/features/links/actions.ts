@@ -1,4 +1,4 @@
-import { DEFAULT_ACTIVITIES } from '@/content/activities'
+import { ACTIVITIES_SITE, DEFAULT_ACTIVITIES } from '@/content/activities'
 import { db } from '@/data/db'
 import { patch, remove, save, saveMany } from '@/data/repo'
 import type { Bookmark } from '@/data/schema'
@@ -30,17 +30,88 @@ export const activityId = (url: string) =>
     .replace(/^-|-$/g, '')
     .toLowerCase()}`
 
-/** Add any default activity that's missing (matched by URL). */
+type SiteActivity = (typeof DEFAULT_ACTIVITIES)[number]
+const urlKey = (url: string) => url.replace(/\/$/, '').toLowerCase()
+
+/** Add any default activity that's missing (matched by URL), including ones you removed. */
 export async function restoreActivities(): Promise<number> {
+  const site = (await fetchSiteActivities().catch(() => null)) ?? DEFAULT_ACTIVITIES
+  return mergeActivities(site, { restoreRemoved: true })
+}
+
+/** Read the activity tiles (link + picture + alt text) from the home page's HTML. */
+export function parseActivitiesHtml(html: string, base = ACTIVITIES_SITE): SiteActivity[] {
+  const doc = new DOMParser().parseFromString(html, 'text/html')
+  const seen = new Set<string>()
+  const out: SiteActivity[] = []
+  for (const a of doc.querySelectorAll('a[href]')) {
+    const img = a.querySelector('img[src]')
+    if (!img) continue
+    try {
+      const url = new URL(a.getAttribute('href')!, base).href
+      const image = new URL(img.getAttribute('src')!, base).href
+      const name = (img.getAttribute('alt') || a.textContent || '').trim() || new URL(url).pathname.replace(/\//g, ' ').trim()
+      if (!/^https?:/.test(url) || seen.has(urlKey(url))) continue
+      seen.add(urlKey(url))
+      out.push({ name, url, image })
+    } catch {
+      // Skip malformed links.
+    }
+  }
+  return out
+}
+
+export async function fetchSiteActivities(): Promise<SiteActivity[]> {
+  const res = await fetch(ACTIVITIES_SITE, { cache: 'no-cache' })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  const list = parseActivitiesHtml(await res.text())
+  if (list.length < 3) throw new Error('The activities page looks different than expected.')
+  return list
+}
+
+/**
+ * Bring the Activities in line with the site's list: add new ones at the front
+ * (the site lists newest first) and refresh pictures hosted on the site. Your
+ * own activities, custom pictures and ones you removed are left alone.
+ */
+export async function mergeActivities(site: SiteActivity[], opts: { restoreRemoved?: boolean } = {}): Promise<number> {
   const all = await db.bookmarks.toArray()
-  const have = new Set(all.filter((b) => kindOf(b) === 'activity').map((b) => b.url.replace(/\/$/, '').toLowerCase()))
-  const start = all.reduce((m, b) => Math.max(m, b.order), 0) + 1
-  const missing = DEFAULT_ACTIVITIES.filter((a) => !have.has(a.url.replace(/\/$/, '').toLowerCase()))
+  const mine = new Map(all.filter((b) => kindOf(b) === 'activity').map((b) => [urlKey(b.url), b]))
+  const removed = new Set(
+    opts.restoreRemoved ? [] : (await db.tombstones.where('table').equals('bookmarks').toArray()).map((t) => t.recordId),
+  )
+  const siteOrigin = new URL(ACTIVITIES_SITE).origin
+  for (const a of site) {
+    const b = mine.get(urlKey(a.url))
+    if (b && b.image !== a.image && (!b.image || b.image.startsWith(siteOrigin))) await patch('bookmarks', b.id, { image: a.image })
+  }
+  const fresh = site.filter((a) => !mine.has(urlKey(a.url)) && !removed.has(activityId(a.url)))
+  const first = all.reduce((m, b) => Math.min(m, b.order), 0)
   await saveMany(
     'bookmarks',
-    missing.map((a, i) => ({ ...a, id: activityId(a.url), kind: 'activity' as const, order: start + i })),
+    fresh.map((a, i) => ({ ...a, id: activityId(a.url), kind: 'activity' as const, order: first - fresh.length + i })),
   )
-  return missing.length
+  return fresh.length
+}
+
+const CHECKED_KEY = 'activities:checked'
+
+/** Check the home page for new activities (at most every few hours unless forced). Returns how many were added. */
+export async function refreshActivities(force = false): Promise<number> {
+  let last = 0
+  try {
+    last = Number(localStorage.getItem(CHECKED_KEY)) || 0
+  } catch {
+    // No storage: check every time.
+  }
+  if (!force && Date.now() - last < 6 * 3600_000) return 0
+  const site = await fetchSiteActivities()
+  try {
+    localStorage.setItem(CHECKED_KEY, String(Date.now()))
+  } catch {
+    // Ignore.
+  }
+  return mergeActivities(site)
 }
 
 export async function saveLink(

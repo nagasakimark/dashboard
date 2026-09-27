@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ArrowDown, ArrowUp, Check, ExternalLink, Globe, ImagePlus, Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, Check, ExternalLink, Globe, ImagePlus, Pencil, Plus, RefreshCw, RotateCcw, Trash2 } from 'lucide-react'
 import { Button, Dialog, EmptyState, Field, IconButton, Input, useFeedback } from '@/components/ui'
 import { db } from '@/data/db'
 import { shrinkImage } from '@/data/images'
 import type { Bookmark } from '@/data/schema'
 import { cn } from '@/lib/cn'
-import { deleteLink, ensureActivities, kindOf, moveLink, restoreActivities, saveLink, type LinkKind } from './actions'
+import { deleteLink, ensureActivities, kindOf, moveLink, refreshActivities, restoreActivities, saveLink, type LinkKind } from './actions'
 
 function LinkEditor({ link, kind, onClose }: { link: Bookmark | null; kind: LinkKind; onClose: () => void }) {
   const [name, setName] = useState(link?.name ?? '')
@@ -47,7 +47,7 @@ function LinkEditor({ link, kind, onClose }: { link: Bookmark | null; kind: Link
           {(id) => (
             <div className="flex items-center gap-2">
               <span className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-xl bg-canvas ring-1 ring-line">
-                {image ? <img src={image} alt="" className="size-full object-cover" /> : <Globe className="text-ink-faint" aria-hidden />}
+                {image ? <img src={image} alt="" className="size-full object-contain" /> : <Globe className="text-ink-faint" aria-hidden />}
               </span>
               <Input
                 id={id}
@@ -80,11 +80,28 @@ export function LinkGrid({ kind, compact = false }: { kind: LinkKind; compact?: 
   const { toast } = useFeedback()
   const [editing, setEditing] = useState(false)
   const [editor, setEditor] = useState<Bookmark | 'new' | null>(null)
+  const [checking, setChecking] = useState(false)
   const links = useLiveQuery(async () => (await db.bookmarks.orderBy('order').toArray()).filter((b) => kindOf(b) === kind), [kind])
 
   useEffect(() => {
-    if (kind === 'activity') void ensureActivities()
-  }, [kind])
+    if (kind !== 'activity') return
+    void ensureActivities()
+      .then(() => refreshActivities())
+      .then((n) => n && toast(`${n} new ${n === 1 ? 'activity' : 'activities'} from nagasakimark.github.io`, { tone: 'success' }))
+      .catch(() => undefined) // Offline: the saved list is fine.
+  }, [kind, toast])
+
+  const checkNow = async () => {
+    setChecking(true)
+    try {
+      const n = await refreshActivities(true)
+      toast(n ? `Added ${n} new ${n === 1 ? 'activity' : 'activities'}.` : 'You have every activity from nagasakimark.github.io.')
+    } catch {
+      toast('Couldn’t reach nagasakimark.github.io. Check the connection and try again.', { tone: 'error' })
+    } finally {
+      setChecking(false)
+    }
+  }
 
   const del = async (b: Bookmark) => {
     const undo = await deleteLink(b)
@@ -100,6 +117,11 @@ export function LinkGrid({ kind, compact = false }: { kind: LinkKind; compact?: 
         {editing && (
           <Button size="sm" icon={Plus} onClick={() => setEditor('new')}>
             {kind === 'activity' ? 'Add activity' : 'Add bookmark'}
+          </Button>
+        )}
+        {kind === 'activity' && (
+          <Button size="sm" variant="ghost" icon={RefreshCw} onClick={checkNow} disabled={checking}>
+            {checking ? 'Checking…' : 'Check for new'}
           </Button>
         )}
         {editing && kind === 'activity' && (
@@ -138,7 +160,7 @@ export function LinkGrid({ kind, compact = false }: { kind: LinkKind; compact?: 
           }
         />
       ) : (
-        <ul className={cn('grid gap-3', compact ? 'grid-cols-3 sm:grid-cols-4' : 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-6')}>
+        <ul className={cn('grid items-start gap-3', compact ? 'grid-cols-3 sm:grid-cols-4' : 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-6')}>
           {links?.map((b, i) => (
             <li key={b.id} className="group relative">
               <a
@@ -151,13 +173,20 @@ export function LinkGrid({ kind, compact = false }: { kind: LinkKind; compact?: 
                 )}
                 tabIndex={editing ? -1 : undefined}
               >
-                <span className="block aspect-[3/2] overflow-hidden rounded-xl bg-canvas">
-                  {b.image ? (
-                    <img src={b.image} alt="" loading="lazy" referrerPolicy="no-referrer" className="size-full object-cover" />
-                  ) : (
-                    <span className="grid size-full place-items-center text-2xl font-black text-accent/40">{b.name[0]}</span>
-                  )}
-                </span>
+                {b.image ? (
+                  // Natural aspect ratio: the pictures aren't all the same shape.
+                  <img
+                    src={b.image}
+                    alt=""
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                    className="block h-auto min-h-12 w-full rounded-xl bg-canvas"
+                  />
+                ) : (
+                  <span className="grid aspect-[3/2] place-items-center rounded-xl bg-canvas text-2xl font-black text-accent/40">
+                    {b.name[0]}
+                  </span>
+                )}
                 <span className="flex items-center gap-1 px-0.5 text-xs leading-tight font-bold">
                   <span className="line-clamp-2 flex-1">{b.name}</span>
                   <ExternalLink size={11} className="shrink-0 text-ink-faint" aria-hidden />

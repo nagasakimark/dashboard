@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { DEFAULT_ACTIVITIES } from '@/content/activities'
 import { db } from '@/data/db'
 import { remove, save } from '@/data/repo'
-import { ensureActivities, kindOf, moveLink, normaliseUrl, restoreActivities } from './actions'
+import { ensureActivities, kindOf, mergeActivities, moveLink, normaliseUrl, parseActivitiesHtml, restoreActivities } from './actions'
 
 beforeEach(async () => {
   await Promise.all(db.tables.map((t) => t.clear()))
@@ -36,5 +36,35 @@ describe('links', () => {
     expect((await db.bookmarks.orderBy('order').toArray()).map((x) => x.name)).toEqual(['B', 'A'])
     expect(normaliseUrl('example.com/x')).toBe('https://example.com/x')
     expect(normaliseUrl('mailto:me@x.jp')).toBe('mailto:me@x.jp')
+  })
+
+  it('reads the activity tiles from the home page', () => {
+    const html = `<div class="box"><a href="https://nagasakimark.github.io/chef" target="_blank"><img src="./images/chef.png" alt="Tomachi Chef"></a></div>
+      <div class="box"><a href="/wordle"><img src="images/wordle.png" alt=""></a></div>
+      <p><a href="https://example.com">text only</a></p>`
+    expect(parseActivitiesHtml(html)).toEqual([
+      { name: 'Tomachi Chef', url: 'https://nagasakimark.github.io/chef', image: 'https://nagasakimark.github.io/images/chef.png' },
+      { name: 'wordle', url: 'https://nagasakimark.github.io/wordle', image: 'https://nagasakimark.github.io/images/wordle.png' },
+    ])
+  })
+
+  it('adds new site activities first, fixes site pictures, and respects removals', async () => {
+    await ensureActivities()
+    const tescodle = (await activities()).find((a) => a.name === 'Tescodle')!
+    await db.bookmarks.update(tescodle.id, { image: 'https://nagasakimark.github.io/home/images/tescodle.png' })
+    const wordle = (await activities()).find((a) => a.name === 'Wordle')!
+    await remove('bookmarks', wordle.id)
+    const site = [
+      { name: 'Brand New', url: 'https://nagasakimark.github.io/brandnew', image: 'https://nagasakimark.github.io/images/new.png' },
+      { name: 'tescodle', url: 'https://nagasakimark.github.io/tescodle', image: 'https://nagasakimark.github.io/images/tescodle.png' },
+      { name: 'Wordle', url: 'https://nagasakimark.github.io/wordle', image: 'https://nagasakimark.github.io/images/wordle.png' },
+    ]
+    expect(await mergeActivities(site)).toBe(1)
+    const list = await activities()
+    expect(list[0].name).toBe('Brand New')
+    expect(list.find((a) => a.id === tescodle.id)?.image).toBe('https://nagasakimark.github.io/images/tescodle.png')
+    expect(list.some((a) => a.name === 'Wordle')).toBe(false)
+    expect(await mergeActivities(site)).toBe(0)
+    expect(await mergeActivities(site, { restoreRemoved: true })).toBe(1)
   })
 })

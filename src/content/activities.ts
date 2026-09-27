@@ -1,10 +1,20 @@
-/** The old dashboard's Activities panel: the author's classroom sites. */
+/**
+ * The author's classroom sites, as listed on https://nagasakimark.github.io/
+ * (snapshot 2026-09-27). The Activities panel refreshes from that page when
+ * online, so new activities appear without an app update.
+ */
+export const ACTIVITIES_SITE = 'https://nagasakimark.github.io/'
 const SITE = 'https://nagasakimark.github.io'
 
 export const DEFAULT_ACTIVITIES: { name: string; url: string; image: string }[] = [
-  { name: 'Tescodle', url: `${SITE}/tescodle`, image: `${SITE}/home/images/tescodle.png` },
-  { name: 'World Heritage Guesser', url: `${SITE}/worldheritageguesser`, image: `${SITE}/home/images/worldheritageguesser.png` },
-  { name: 'Tomachi Store', url: `${SITE}/tomachistore`, image: `${SITE}/home/images/tomachistore.png` },
+  { name: 'Tomachi Chef', url: `${SITE}/chef`, image: `${SITE}/images/chef.png` },
+  { name: 'Pokemon Soccer', url: `${SITE}/football`, image: `${SITE}/images/football.png` },
+  { name: 'Slots', url: `${SITE}/slot`, image: `${SITE}/images/slot.png` },
+  { name: 'Guess Who', url: `${SITE}/guesswho`, image: `${SITE}/images/guesswho.png` },
+  { name: 'Statiq Office', url: `${SITE}/statiq`, image: `${SITE}/images/statiq.png` },
+  { name: 'Tescodle', url: `${SITE}/tescodle`, image: `${SITE}/images/tescodle.png` },
+  { name: 'World Heritage Guesser', url: `${SITE}/worldheritageguesser`, image: `${SITE}/images/worldheritageguesser.png` },
+  { name: 'Tomachi Store', url: `${SITE}/tomachistore`, image: `${SITE}/images/tomachistore.png` },
   { name: 'Digital English Board', url: `${SITE}/digitalenglishboard`, image: `${SITE}/images/digitalenglishboard.png` },
   { name: 'Splatoon', url: `${SITE}/splatoon`, image: `${SITE}/images/splatoon.png` },
   { name: 'Classroom Polls', url: `${SITE}/poll`, image: `${SITE}/images/poll.png` },

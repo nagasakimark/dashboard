@@ -1,8 +1,19 @@
 import { expect, test } from '@playwright/test'
 
 test('activities, bookmarks and textbook links, in the planner and on the board', async ({ page }, info) => {
+  // The Activities list refreshes from the home page; a new tile there shows up first.
+  await page.route('https://nagasakimark.github.io/', (route) =>
+    route.fulfill({
+      contentType: 'text/html',
+      body: `<div class="box"><a href="https://nagasakimark.github.io/newgame"><img src="./images/newgame.png" alt="New Game"></a></div>
+        <div class="box"><a href="https://nagasakimark.github.io/tescodle"><img src="./images/tescodle.png" alt="tescodle"></a></div>
+        <div class="box"><a href="https://nagasakimark.github.io/wordle"><img src="./images/wordle.png" alt="Wordle"></a></div>`,
+    }),
+  )
   await page.goto('./#/links')
   await expect(page.getByRole('link', { name: /Tescodle/ })).toHaveAttribute('href', 'https://nagasakimark.github.io/tescodle')
+  await expect(page.getByRole('status').filter({ hasText: '1 new activity' })).toBeVisible()
+  await expect(page.getByRole('listitem').first().getByRole('link')).toHaveAttribute('href', 'https://nagasakimark.github.io/newgame')
 
   await page.getByRole('tab', { name: 'Bookmarks' }).click()
   await page.getByRole('button', { name: 'Add', exact: true }).click()
