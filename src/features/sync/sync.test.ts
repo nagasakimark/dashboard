@@ -171,4 +171,39 @@ describe('sync engine', () => {
     ea.stop()
     eb.stop()
   })
+
+  it('a database the browser cleared never deletes cloud data, and re-downloads once the sync position is reset', async () => {
+    const cloud = memoryCloud()
+    const a = device()
+    const store = kv()
+    await a.todos.put(todo('t1', 'Lesson notes', 0))
+    await a.todos.put(todo('t2', 'Worksheets', 0))
+    const ea = new SyncEngine(a, cloud.remote(), store)
+    ea.start()
+    await ea.push()
+    await settle()
+    ea.stop()
+    expect(cloud.tables.get('todos')?.size).toBe(2)
+
+    // The browser clears the database (storage clean-up); the sync position survived in localStorage.
+    await a.todos.clear()
+    await a.tombstones.clear()
+    const again = new SyncEngine(a, cloud.remote(), store)
+    again.start()
+    await again.push()
+    await settle()
+    // Nothing was deleted in the cloud...
+    expect([...(cloud.tables.get('todos')?.values() ?? [])].map((d) => d.deleted)).toEqual([false, false])
+    // ...but the device stays empty, because its saved position says it already has those documents.
+    expect(await a.todos.count()).toBe(0)
+    again.stop()
+
+    // With the position reset (what the wipe check does), everything comes back.
+    SyncEngine.reset(store)
+    const restored = new SyncEngine(a, cloud.remote(), store)
+    restored.start()
+    await settle()
+    expect((await a.todos.toArray()).map((t) => t.text).sort()).toEqual(['Lesson notes', 'Worksheets'])
+    restored.stop()
+  })
 })

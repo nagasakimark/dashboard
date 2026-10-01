@@ -6,7 +6,12 @@ import { SYNCED_TABLES, syncedTables, type SyncedTable } from './schema'
 
 export const APP_ID = 'alt-dashboard'
 export const SCHEMA_VERSION = 1
+/** Backups made before an import, restore or erase, or by hand. */
 const MAX_BACKUPS = 5
+/** Daily automatic backups. */
+const MAX_AUTO_BACKUPS = 7
+export const AUTO_BACKUP_REASON = 'Automatic daily backup'
+export const isAutoBackup = (b: Pick<Backup, 'reason'>) => b.reason === AUTO_BACKUP_REASON
 
 export type ExportData = { [K in SyncedTable]: z.infer<(typeof syncedTables)[K]>[] }
 
@@ -118,7 +123,7 @@ export async function replaceAllData(file: ExportFile, reason = 'Before import')
 
 /* ----------------------------------------------------------- backups */
 
-/** Snapshot all data into the backups table, keeping the newest few. */
+/** Snapshot all data into the backups table, keeping the newest few of each kind (automatic and not). */
 export async function createBackup(reason: string): Promise<Backup> {
   const file = await buildExport()
   const backup: Backup = {
@@ -130,10 +135,39 @@ export async function createBackup(reason: string): Promise<Backup> {
   }
   await db.transaction('rw', db.backups, async () => {
     await db.backups.add(backup)
-    const all = await db.backups.orderBy('createdAt').reverse().primaryKeys()
-    if (all.length > MAX_BACKUPS) await db.backups.bulkDelete(all.slice(MAX_BACKUPS))
+    const all = await db.backups.orderBy('createdAt').reverse().toArray()
+    const auto = all.filter(isAutoBackup)
+    const other = all.filter((b) => !isAutoBackup(b))
+    const drop = [...auto.slice(MAX_AUTO_BACKUPS), ...other.slice(MAX_BACKUPS)].map((b) => b.id)
+    if (drop.length) await db.backups.bulkDelete(drop)
   })
   return backup
+}
+
+/** The newest change to any record (ms), from the updatedAt indexes. */
+async function latestChange(): Promise<number> {
+  let latest = 0
+  for (const t of SYNCED_TABLES) {
+    const last = (await db.syncedTable(t).orderBy('updatedAt').last()) as { updatedAt?: number } | undefined
+    latest = Math.max(latest, last?.updatedAt ?? 0)
+  }
+  return latest
+}
+
+/**
+ * Take the daily automatic backup if it's due: at most one per ~20 hours, only
+ * when something changed since the last one, and never of an empty database
+ * (so an empty or just-wiped database can't push good backups out).
+ */
+export async function runAutoBackup(now = Date.now()): Promise<Backup | null> {
+  const all = await db.backups.orderBy('createdAt').reverse().toArray()
+  const lastAuto = all.find(isAutoBackup)
+  if (lastAuto && now - lastAuto.createdAt < 20 * 3600_000) return null
+  const changed = await latestChange()
+  if (!changed || (lastAuto && changed <= lastAuto.createdAt)) return null
+  const file = await buildExport()
+  if (isEmptyData(countRecords(file.data))) return null
+  return createBackup(AUTO_BACKUP_REASON)
 }
 
 export async function restoreBackup(id: string): Promise<void> {

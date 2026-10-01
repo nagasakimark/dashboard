@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { checkIntegrity } from '@/data/integrity'
 import { DATA_REPLACED, dataEvents } from '@/data/events'
 import type { SyncStatus } from './engine'
 import { SYNC_ENABLED_KEY, SyncContext, syncWanted, type SyncApi } from './context'
@@ -24,6 +25,9 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         return
       }
       setAccount(acc)
+      // If the browser cleared this device's database, forget the saved sync position so
+      // everything is downloaded again (a wipe never deletes anything in the cloud).
+      if ((await checkIntegrity()).wiped) cloud.resetSyncState(acc.uid)
       session.current?.sync.stop()
       session.current = { cloud, sync: cloud.startCloudSync(acc, setStatus), uid: acc.uid }
     } catch (e) {

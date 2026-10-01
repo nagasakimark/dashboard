@@ -81,7 +81,7 @@ export function AgendaView({ days, selected, onSelect, onShift, dayMap, periods,
                 !on && isToday(d) && 'ring-2 ring-accent/40',
               )}
             >
-              <span className={cn('text-[11px] font-semibold uppercase', on ? 'text-white/80' : 'text-ink-faint')}>{format(d, 'EEE')}</span>
+              <span className={cn('text-[11px] font-semibold uppercase', on ? 'text-white' : 'text-ink-soft')}>{format(d, 'EEE')}</span>
               <span className="text-lg leading-tight font-bold">{format(d, 'd')}</span>
               <span
                 className="mt-0.5 size-1.5 rounded-full"
@@ -100,8 +100,11 @@ export function AgendaView({ days, selected, onSelect, onShift, dayMap, periods,
         style={school ? { backgroundColor: `color-mix(in oklab, ${school.color} 9%, white)` } : undefined}
       >
         <span className="min-w-0 flex-1">
-          <span className="block text-xs font-semibold text-ink-faint uppercase">{format(selected, 'EEEE d MMMM')}</span>
-          <span className="block truncate font-bold" style={{ color: school?.color }}>
+          <span className="block text-xs font-semibold text-ink-soft uppercase">{format(selected, 'EEEE d MMMM')}</span>
+          <span
+            className="block truncate font-bold"
+            style={{ color: school ? `color-mix(in oklab, ${school.color} 72%, black)` : undefined }}
+          >
             {school ? school.name : day?.kind === 'off' ? day.dayType : 'No school set'}
           </span>
           {day?.note && <span className="block truncate text-xs text-ink-soft italic">{day.note}</span>}

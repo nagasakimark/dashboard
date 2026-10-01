@@ -140,8 +140,23 @@ export default function HelpPage() {
 
         <Section icon={HardDriveDownload} title="Your data and backups">
           <ul>
-            <li>Export everything to one file from Settings. Imports replace your data, but a backup is taken first and you can undo.</li>
-            <li>The last five backups are kept on the device; restore or download them from Settings.</li>
+            <li>
+              Your data lives in this browser. <A to="/settings">Settings → Keeping your data safe</A> shows what protects it: the browser
+              promising not to clear it, a copy in the cloud (sync), and a backup file you download now and then.
+            </li>
+            <li>
+              A backup is taken automatically each day you use the app (the last 7 are kept), and before every import, restore or erase. To
+              go back to one, open Settings → Backups and press <strong>Restore</strong>; your current data is backed up first, so you can
+              undo.
+            </li>
+            <li>
+              If a browser ever clears the app’s data, it can’t delete anything from your cloud copy: sign in under Sync and everything
+              comes back. Without sync, import your last backup file (Settings → Import a file).
+            </li>
+            <li>
+              If a page ever shows “hit a problem”, your data is safe: press Try again. <strong>Copy details</strong> there copies what went
+              wrong, which helps when asking for a fix.
+            </li>
           </ul>
         </Section>
 

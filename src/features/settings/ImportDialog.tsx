@@ -1,7 +1,11 @@
 import { useState } from 'react'
-import { FileWarning, Info, ShieldCheck } from 'lucide-react'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { FileWarning, Info, ShieldAlert, ShieldCheck } from 'lucide-react'
 import { Badge, Button, Dialog, useFeedback } from '@/components/ui'
+import { db } from '@/data/db'
 import type { ImportPlan } from '@/data/importFile'
+import { SYNCED_TABLES } from '@/data/schema'
+import { useSync } from '@/features/sync/context'
 import { TABLE_LABELS } from '@/data/labels'
 import { restoreBackup } from '@/data/transfer'
 
@@ -32,7 +36,14 @@ interface ImportDialogProps {
 /** Preview of an import (format, counts, problems) with the confirm step. */
 export function ImportDialog({ plan, onClose, onDone, title = 'Import data', confirmLabel }: ImportDialogProps) {
   const { toast } = useFeedback()
+  const sync = useSync()
   const [busy, setBusy] = useState(false)
+  // How much data is here now, to warn when an import would replace much more than it brings.
+  const current = useLiveQuery(
+    async () =>
+      (await Promise.all(SYNCED_TABLES.filter((t) => t !== 'settings').map((t) => db.syncedTable(t).count()))).reduce((a, b) => a + b, 0),
+    [],
+  )
 
   const run = async () => {
     if (!plan?.apply) return
@@ -61,6 +72,8 @@ export function ImportDialog({ plan, onClose, onDone, title = 'Import data', con
   }
 
   const replace = plan?.mode === 'replace'
+  const incoming = plan ? Object.entries(plan.counts).reduce((n, [k, v]) => (k === 'settings' ? n : n + v), 0) : 0
+  const shrinks = replace && current !== undefined && current >= 20 && incoming < current / 2
   return (
     <Dialog
       open={!!plan}
@@ -127,6 +140,18 @@ export function ImportDialog({ plan, onClose, onDone, title = 'Import data', con
             </div>
           )}
 
+          {plan.apply && shrinks && (
+            <div role="alert" className="rounded-xl border border-danger/30 bg-danger/5 p-3 text-sm text-danger">
+              <p className="flex items-center gap-2 font-semibold">
+                <ShieldAlert size={16} aria-hidden /> This file has much less than you have now
+              </p>
+              <p className="mt-1 text-xs">
+                It has {incoming.toLocaleString()} records and you have {current?.toLocaleString()} here. Importing replaces the larger set
+                with the smaller one. If that isn’t what you meant, cancel.
+              </p>
+            </div>
+          )}
+
           {plan.apply && replace && (
             <div className="rounded-xl bg-accent-soft p-3 text-sm text-accent-strong">
               <p className="flex items-center gap-2 font-semibold">
@@ -134,6 +159,7 @@ export function ImportDialog({ plan, onClose, onDone, title = 'Import data', con
               </p>
               <p className="mt-1 text-xs">
                 Your current data is backed up first, and you can undo straight after.
+                {sync.enabled && <> Sync is on, so your cloud copy and your other devices are replaced too.</>}
                 {plan.keeps.length > 0 && <> Kept as they are: {plan.keeps.join('; ').toLowerCase()}.</>}
               </p>
             </div>

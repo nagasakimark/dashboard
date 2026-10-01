@@ -30,6 +30,12 @@ export interface Backup {
   json: string
 }
 
+/** Device-only bookkeeping (never exported or synced), e.g. the database's identity marker. */
+export interface MetaRow {
+  key: string
+  value: unknown
+}
+
 /**
  * The app database. Name chosen so it never collides with the legacy
  * `alt-planner-db` / `livepoll` databases that share this origin (those are
@@ -54,6 +60,7 @@ export class AppDB extends Dexie {
   settings!: EntityTable<SettingRow, 'id'>
   tombstones!: EntityTable<Tombstone, 'id'>
   backups!: EntityTable<Backup, 'id'>
+  meta!: EntityTable<MetaRow, 'key'>
 
   constructor(name = 'alt-dashboard') {
     super(name)
@@ -79,6 +86,8 @@ export class AppDB extends Dexie {
     })
     // v2 (Phase 10): custom vocabulary sets for the games.
     this.version(2).stores({ vocabSets: 'id, name, updatedAt' })
+    // v3: device-only bookkeeping, used to notice when the browser has cleared the database.
+    this.version(3).stores({ meta: 'key' })
   }
 
   /** Untyped access to a synced table by name (export/import/sync). */

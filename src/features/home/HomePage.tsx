@@ -25,6 +25,7 @@ import { current, upcoming, withTimes, type TimedPeriod } from '@/features/sched
 import { cn } from '@/lib/cn'
 import { useIsDesktop } from '@/lib/useMediaQuery'
 import { useNow } from '@/lib/useNow'
+import { DataBanners } from './DataBanners'
 import { LegacyImportBanner } from './LegacyImportBanner'
 import { TodoList } from './TodoList'
 
@@ -71,6 +72,7 @@ export default function HomePage() {
 
   return (
     <Page title={`${greeting(now)}${name ? `, ${name}` : ''}`} description={format(now, 'EEEE d MMMM')} width="wide" fill={desktop}>
+      <DataBanners />
       <LegacyImportBanner />
       <div className="grid gap-4 md:min-h-0 md:flex-1 md:grid-rows-[auto_minmax(0,1fr)] lg:grid-cols-12">
         <div className="min-w-0 lg:col-span-8">

@@ -100,3 +100,50 @@ test('the install button is always there, with steps when the browser has no pro
   await dialog.getByRole('button', { name: 'Got it' }).click()
   await expect(dialog).toBeHidden()
 })
+
+test('Settings shows how the data is protected, and backups can be restored with a visible button', async ({ page }) => {
+  await page.goto('./#/settings')
+  const card = page.getByRole('heading', { name: 'Keeping your data safe' }).locator('xpath=ancestor::*[contains(@class,"rounded")][1]')
+  await expect(card.getByText('Protected from browser clean-up')).toBeVisible()
+  await expect(card.getByText('A copy in the cloud (sync)')).toBeVisible()
+  await expect(card.getByText('Never downloaded.')).toBeVisible()
+  const [download] = await Promise.all([page.waitForEvent('download'), card.getByRole('button', { name: 'Download' }).click()])
+  expect(download.suggestedFilename()).toMatch(/^alt-dashboard-\d{4}-\d{2}-\d{2}\.json$/)
+  await expect(card.getByText(/Last downloaded/)).toBeVisible()
+
+  await page.getByRole('button', { name: 'Back up now' }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Backup created.' })).toBeVisible()
+  await page.getByRole('button', { name: 'Restore', exact: true }).click()
+  const confirm = page.getByRole('dialog', { name: 'Restore this backup?' })
+  await expect(confirm.getByText('backed up first')).toBeVisible()
+  await confirm.getByRole('button', { name: 'Restore' }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Backup restored.' })).toBeVisible()
+})
+
+test('a browser that cleared the database is noticed, with a way back', async ({ page }) => {
+  await page.goto('./#/settings')
+  await page.waitForFunction(() => localStorage.getItem('dbInstance')) // the marker exists after first use
+  // Simulate the browser clearing IndexedDB while localStorage survives.
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        const req = indexedDB.open('alt-dashboard')
+        req.onsuccess = () => {
+          const tx = req.result.transaction('meta', 'readwrite')
+          tx.objectStore('meta').clear()
+          tx.oncomplete = () => resolve()
+          tx.onerror = () => reject(tx.error)
+        }
+      }),
+  )
+  await page.reload()
+  await page.goto('./#/')
+  await expect(page.getByRole('alert').filter({ hasText: 'This browser cleared the app’s stored data' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Bring it back' })).toHaveAttribute('href', /#\/settings#sync$/)
+  const notice = page.getByRole('alert').filter({ hasText: 'This browser cleared the app’s stored data' })
+  await notice.getByRole('button', { name: 'Dismiss' }).click()
+  await expect(notice).toHaveCount(0)
+  // Only noticed once.
+  await page.reload()
+  await expect(page.getByText('This browser cleared the app’s stored data')).toHaveCount(0)
+})
