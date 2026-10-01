@@ -51,6 +51,8 @@ export function parseActivitiesHtml(html: string, base = ACTIVITIES_SITE): SiteA
       const url = new URL(a.getAttribute('href')!, base).href
       const image = new URL(img.getAttribute('src')!, base).href
       const name = (img.getAttribute('alt') || a.textContent || '').trim() || new URL(url).pathname.replace(/\//g, ' ').trim()
+      // This dashboard's own tile on the home page isn't an activity.
+      if (new URL(url).pathname.replace(/\/$/, '') === '/dashboard') continue
       if (!/^https?:/.test(url) || seen.has(urlKey(url))) continue
       seen.add(urlKey(url))
       out.push({ name, url, image })

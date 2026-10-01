@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_ACTIVITIES } from '@/content/activities'
 import { db } from '@/data/db'
 import { remove, save } from '@/data/repo'
@@ -6,6 +6,8 @@ import { ensureActivities, kindOf, mergeActivities, moveLink, normaliseUrl, pars
 
 beforeEach(async () => {
   await Promise.all(db.tables.map((t) => t.clear()))
+  // Never reach the real home page: tests run offline, so the bundled list is used.
+  vi.stubGlobal('fetch', () => Promise.reject(new TypeError('Failed to fetch')))
 })
 
 const activities = async () => (await db.bookmarks.orderBy('order').toArray()).filter((b) => kindOf(b) === 'activity')
@@ -41,6 +43,7 @@ describe('links', () => {
   it('reads the activity tiles from the home page', () => {
     const html = `<div class="box"><a href="https://nagasakimark.github.io/chef" target="_blank"><img src="./images/chef.png" alt="Tomachi Chef"></a></div>
       <div class="box"><a href="/wordle"><img src="images/wordle.png" alt=""></a></div>
+      <div class="box"><a href="https://nagasakimark.github.io/dashboard"><img src="./images/dashboard.png" alt="Dashboard"></a></div>
       <p><a href="https://example.com">text only</a></p>`
     expect(parseActivitiesHtml(html)).toEqual([
       { name: 'Tomachi Chef', url: 'https://nagasakimark.github.io/chef', image: 'https://nagasakimark.github.io/images/chef.png' },

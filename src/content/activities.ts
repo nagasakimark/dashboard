@@ -1,6 +1,6 @@
 /**
  * The author's classroom sites, as listed on https://nagasakimark.github.io/
- * (snapshot 2026-09-27). The Activities panel refreshes from that page when
+ * (snapshot 2026-10-01; this dashboard's own tile is left out). The Activities panel refreshes from that page when
  * online, so new activities appear without an app update.
  */
 export const ACTIVITIES_SITE = 'https://nagasakimark.github.io/'
@@ -35,4 +35,5 @@ export const DEFAULT_ACTIVITIES: { name: string; url: string; image: string }[] 
   { name: 'Sorting Hat', url: `${SITE}/sortinghat/`, image: `${SITE}/images/hogwarts.png` },
   { name: 'Champon', url: `${SITE}/champon`, image: `${SITE}/images/champon.png` },
   { name: 'Hamanomachi', url: `${SITE}/hamanomachi`, image: `${SITE}/images/hamanomachi.png` },
+  { name: 'Hamanomachi 3', url: `${SITE}/hamanomachi3`, image: `${SITE}/images/hamanomachi3.png` },
 ]
