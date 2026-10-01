@@ -47,6 +47,52 @@ export const POLL_TYPES: { id: PollType; label: string; hint: string }[] = [
   { id: 'wordcloud', label: 'Word cloud', hint: 'Type a short answer' },
 ]
 
+/**
+ * A poll as read from the realtime database. Firebase doesn't store empty
+ * arrays or null, so a rating or word-cloud poll arrives without `answers`
+ * (and old records may lack other fields): fill everything in so the rest of
+ * the app can rely on the shape.
+ */
+export function normalizePoll(value: unknown): Poll | null {
+  if (!value || typeof value !== 'object') return null
+  const p = value as Record<string, unknown>
+  const list = (v: unknown): string[] => (Array.isArray(v) ? v : v && typeof v === 'object' ? Object.values(v) : []).map((x) => String(x))
+  const stars = Math.round(Number(p.maxStars))
+  return {
+    ...(p as Partial<Poll>),
+    id: typeof p.id === 'string' ? p.id : '',
+    question: String(p.question ?? ''),
+    type: POLL_TYPES.some((t) => t.id === p.type) ? (p.type as PollType) : 'single',
+    answers: list(p.answers),
+    allowCustom: !!p.allowCustom,
+    allowMultiple: !!(p.allowMultiple ?? p.allowRevote),
+    maxStars: stars >= 1 && stars <= 10 ? stars : 5,
+    status: p.status === 'active' || p.status === 'ended' ? p.status : 'idle',
+  }
+}
+
+/** A vote as read from the database (empty lists and null are missing there). */
+export function normalizeVote(value: unknown): Vote | null {
+  if (!value || typeof value !== 'object') return null
+  const v = value as Record<string, unknown>
+  const list = (x: unknown): string[] => (Array.isArray(x) ? x : x && typeof x === 'object' ? Object.values(x) : []).map((y) => String(y))
+  const createdAt = typeof v.createdAt === 'number' ? v.createdAt : undefined
+  switch (v.type) {
+    case 'single':
+      return { type: 'single', value: String(v.value ?? ''), createdAt }
+    case 'multiple':
+      return { type: 'multiple', values: list(v.values), customValue: v.customValue ? String(v.customValue) : null, createdAt }
+    case 'rank':
+      return { type: 'rank', ranking: list(v.ranking), createdAt }
+    case 'rating':
+      return { type: 'rating', value: Number(v.value) || 0, createdAt }
+    case 'wordcloud':
+      return { type: 'wordcloud', value: String(v.value ?? ''), createdAt }
+    default:
+      return null
+  }
+}
+
 export const needsAnswers = (type: PollType) => type === 'single' || type === 'multiple' || type === 'rank'
 
 /** Plain text only: tags stripped, whitespace collapsed, length capped. */
@@ -83,7 +129,8 @@ export interface Results {
   averageRanks: { label: string; averageRank: number; appearances: number }[]
 }
 
-export function computeResults(poll: Pick<Poll, 'type' | 'answers' | 'allowCustom' | 'maxStars'>, votes: Vote[]): Results {
+export function computeResults(source: Pick<Poll, 'type' | 'answers' | 'allowCustom' | 'maxStars'>, votes: Vote[]): Results {
+  const poll = { ...source, answers: source.answers ?? [] }
   const counts = new Map<string, number>(poll.answers.map((a) => [a, 0]))
   const words = new Map<string, { text: string; value: number }>()
   const addWord = (text: string) => {

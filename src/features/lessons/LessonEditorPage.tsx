@@ -22,6 +22,9 @@ import { Button, ButtonLink, Card, Field, IconButton, Menu, Select, Spinner, Tag
 import { db } from '@/data/db'
 import { newId, patch, remove, save } from '@/data/repo'
 import type { LessonPlan, Resource } from '@/data/schema'
+import { cn } from '@/lib/cn'
+import { logError } from '@/lib/errorLog'
+import { normaliseUrl } from '@/features/links/actions'
 import { useSchools } from '@/features/schedule/hooks'
 import { classLabel, fromIso } from '@/features/schedule/model'
 import { allTags } from './search'
@@ -34,6 +37,7 @@ export default function LessonEditorPage() {
   const { id = '' } = useParams()
   const [params] = useSearchParams()
   const navigate = useNavigate()
+  const { toast } = useFeedback()
   const creating = useRef(false)
 
   useEffect(() => {
@@ -52,10 +56,15 @@ export default function LessonEditorPage() {
         resources: [],
       })
       const period = params.get('period')
-      if (period) await patch('periods', period, { lessonPlanId: plan.id })
+      // Link the period if it exists; a missing period must never stop the plan opening.
+      if (period && (await db.periods.get(period))) await patch('periods', period, { lessonPlanId: plan.id })
       navigate(`/lessons/${plan.id}`, { replace: true, state: { fresh: true } })
-    })()
-  }, [id, params, navigate])
+    })().catch((e: unknown) => {
+      logError(e, 'new lesson plan')
+      toast(`Couldn’t create the lesson plan: ${e instanceof Error ? e.message : 'unknown error'}`, { tone: 'error' })
+      navigate('/lessons', { replace: true })
+    })
+  }, [id, params, navigate, toast])
 
   const plan = useLiveQuery(() => (id && id !== 'new' ? db.lessonPlans.get(id) : undefined), [id])
   if (id === 'new' || plan === undefined)
@@ -83,9 +92,9 @@ const pick = (p: LessonPlan): Draft => ({
   year: p.year,
   textbookId: p.textbookId,
   sectionId: p.sectionId,
-  content: p.content,
-  tags: p.tags,
-  resources: p.resources,
+  content: p.content ?? '',
+  tags: p.tags ?? [],
+  resources: p.resources ?? [],
 })
 
 function Editor({ plan }: { plan: LessonPlan }) {
@@ -153,22 +162,42 @@ function Editor({ plan }: { plan: LessonPlan }) {
   )
 
   const addLink = () => {
-    const url = window.prompt('Link address', 'https://')
-    if (!url || url === 'https://') return
-    const name = window.prompt('Name for this link', new URL(url, 'https://x').hostname.replace(/^www\./, '')) ?? url
-    update({ resources: [...draft.resources, { id: newId(), kind: 'link', name, url }] })
+    const entered = window.prompt('Link address', 'https://')?.trim()
+    if (!entered || entered === 'https://') return
+    const url = normaliseUrl(entered)
+    let host = url
+    try {
+      host = new URL(url).hostname.replace(/^www\./, '')
+    } catch {
+      return toast('That doesn’t look like a web address.', { tone: 'error' })
+    }
+    const name = window.prompt('Name for this link', host) ?? url
+    update({ resources: [...latest.current.resources, { id: newId(), kind: 'link', name: name.trim() || host, url }] })
   }
-  const addFile = async (f: File | undefined) => {
-    if (!f) return
-    if (f.size > MAX_FILE) return toast('Files must be under 1.5 MB. For bigger files, add a link (e.g. Google Drive).', { tone: 'error' })
-    const data = await new Promise<string>((res, rej) => {
-      const r = new FileReader()
-      r.onload = () => res(String(r.result))
-      r.onerror = () => rej(r.error)
-      r.readAsDataURL(f)
-    })
-    update({ resources: [...draft.resources, { id: newId(), kind: 'file', name: f.name, url: '', data, mime: f.type }] })
+  /** Attach small files (several at once, picked or dropped). Files go in as data, so they work offline. */
+  const addFiles = async (files: Iterable<File> | ArrayLike<File> | null | undefined) => {
+    for (const f of Array.from(files ?? [])) {
+      if (f.size > MAX_FILE) {
+        toast(`“${f.name}” is over 1.5 MB. For bigger files, add a link (e.g. Google Drive).`, { tone: 'error' })
+        continue
+      }
+      try {
+        const data = await new Promise<string>((res, rej) => {
+          const r = new FileReader()
+          r.onload = () => res(String(r.result))
+          r.onerror = () => rej(r.error ?? new Error('The file couldn’t be read.'))
+          r.readAsDataURL(f)
+        })
+        // Read the latest list: several files are added one after another.
+        update({
+          resources: [...latest.current.resources, { id: newId(), kind: 'file', name: f.name || 'file', url: '', data, mime: f.type }],
+        })
+      } catch (e) {
+        toast(`Couldn’t attach “${f.name}”: ${e instanceof Error ? e.message : 'unreadable file'}`, { tone: 'error' })
+      }
+    }
   }
+  const [dropping, setDropping] = useState(false)
 
   const duplicate = async () => {
     await flush()
@@ -313,7 +342,22 @@ function Editor({ plan }: { plan: LessonPlan }) {
             </Field>
           </Card>
 
-          <Card className="p-4">
+          <Card
+            className={cn('p-4 transition-shadow', dropping && 'ring-2 ring-accent')}
+            data-file-drop
+            onDragOver={(e) => {
+              if (e.dataTransfer.types.includes('Files')) {
+                e.preventDefault()
+                setDropping(true)
+              }
+            }}
+            onDragLeave={() => setDropping(false)}
+            onDrop={(e) => {
+              e.preventDefault()
+              setDropping(false)
+              void addFiles(Array.from(e.dataTransfer.files))
+            }}
+          >
             <div className="mb-2 flex items-center gap-2">
               <Paperclip size={16} className="text-ink-faint" aria-hidden />
               <h2 className="flex-1 text-sm font-semibold text-ink">Resources</h2>
@@ -327,15 +371,17 @@ function Editor({ plan }: { plan: LessonPlan }) {
                 <input
                   type="file"
                   className="hidden"
+                  multiple
                   onChange={(e) => {
-                    void addFile(e.target.files?.[0])
+                    const files = Array.from(e.target.files ?? [])
                     e.target.value = ''
+                    void addFiles(files)
                   }}
                 />
               </label>
             </div>
             {draft.resources.length === 0 ? (
-              <p className="text-sm text-ink-faint">Worksheets, slides, videos…</p>
+              <p className="text-sm text-ink-faint">Worksheets, slides, videos… (drop small files here)</p>
             ) : (
               <ul className="space-y-1">
                 {draft.resources.map((r) => (

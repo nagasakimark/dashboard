@@ -17,6 +17,7 @@ import type { Widget } from '@/data/schema'
 import { cn } from '@/lib/cn'
 import { GRID, META_BY_TYPE, placeOnBoard, snap } from './model'
 import { WIDGETS, widgetConfig } from './registry'
+import { WidgetBoundary } from './WidgetBoundary'
 
 const HEADER = 32
 
@@ -77,19 +78,21 @@ function WidgetFrameImpl({ widget, board, snapOn, focused, zIndex, actions, bare
   if (meta.overlay)
     return (
       <div className="absolute inset-0" style={{ zIndex }} onPointerDownCapture={() => actions.toFront(id)}>
-        <Body
-          id={id}
-          config={config}
-          update={update}
-          settings={false}
-          closeSettings={() => {}}
-          focused={false}
-          width={board.width}
-          height={board.height}
-          requestResize={requestResize}
-          locked={locked}
-          remove={remove}
-        />
+        <WidgetBoundary type={widget.type} remove={remove}>
+          <Body
+            id={id}
+            config={config}
+            update={update}
+            settings={false}
+            closeSettings={() => {}}
+            focused={false}
+            width={board.width}
+            height={board.height}
+            requestResize={requestResize}
+            locked={locked}
+            remove={remove}
+          />
+        </WidgetBoundary>
       </div>
     )
 
@@ -255,19 +258,21 @@ function WidgetFrameImpl({ widget, board, snapOn, focused, zIndex, actions, bare
               : { width: bodyW, height: bodyH }
           }
         >
-          <Body
-            id={id}
-            config={config}
-            update={update}
-            settings={settings}
-            closeSettings={() => setSettings(false)}
-            focused={focused}
-            width={scaled ? designW : bodyW}
-            height={scaled ? designH : bodyH}
-            requestResize={requestResize}
-            locked={locked}
-            remove={remove}
-          />
+          <WidgetBoundary type={widget.type} remove={remove}>
+            <Body
+              id={id}
+              config={config}
+              update={update}
+              settings={settings}
+              closeSettings={() => setSettings(false)}
+              focused={focused}
+              width={scaled ? designW : bodyW}
+              height={scaled ? designH : bodyH}
+              requestResize={requestResize}
+              locked={locked}
+              remove={remove}
+            />
+          </WidgetBoundary>
         </div>
       </div>
       {!locked && !focused && !bare && (

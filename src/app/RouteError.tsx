@@ -1,6 +1,8 @@
 import { isRouteErrorResponse, useRouteError } from 'react-router'
 import { RefreshCw, TriangleAlert } from 'lucide-react'
+import { useEffect } from 'react'
 import { Button, ButtonLink } from '@/components/ui'
+import { errorReport, logError } from '@/lib/errorLog'
 
 /**
  * Shown when a page throws. Stale chunks after a deploy are the most common
@@ -8,6 +10,7 @@ import { Button, ButtonLink } from '@/components/ui'
  */
 export function RouteError() {
   const error = useRouteError()
+  useEffect(() => logError(error, 'route'), [error])
   const message = isRouteErrorResponse(error)
     ? `${error.status} ${error.statusText}`
     : error instanceof Error
@@ -27,6 +30,9 @@ export function RouteError() {
             Reload
           </Button>
           <ButtonLink to="/">Go home</ButtonLink>
+          <Button variant="ghost" onClick={() => void navigator.clipboard?.writeText(errorReport())}>
+            Copy details
+          </Button>
         </div>
       </div>
     </div>

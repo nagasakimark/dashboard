@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { db } from '@/data/db'
 import type { Period, School } from '@/data/schema'
 import { clearDay, copyDay, deletePeriod, movePeriod, saveDay, savePeriod, type PeriodInput } from './actions'
-import { daySlots, parseClass, previousForClass, slotTimes, timetableFor, weekDays } from './model'
+import { daySlots, parseClass, previousForClass, sameDayLesson, slotTimes, timetableFor, weekDays } from './model'
 
 const school = {
   id: 's1',
@@ -80,6 +80,30 @@ describe('model', () => {
     // No history for 5-3: fall back to the latest in year 5.
     expect(previousForClass(periods, { date: '2026-09-04', slot: 1, year: 5, classNumber: 3 })?.summary).toBe('Unit 1 review')
     expect(previousForClass(periods, { date: '2026-09-04', slot: 1, year: 6, classNumber: 1 })).toBeNull()
+  })
+})
+
+describe('same-day lessons', () => {
+  const p = (date: string, slot: Period['slot'], year: number, classNumber: number, summary: string, lessonPlanId: string | null = null) =>
+    ({ ...cls(date, slot, year, classNumber, summary), lessonPlanId, id: `${date}:${slot}`, createdAt: 0, updatedAt: 0 }) as Period
+
+  it('shares the lesson across classes of the same year on the same day, nearest earlier period first', () => {
+    const periods = [
+      p('2026-09-04', 1, 2, 1, 'Summer vacation talk'),
+      p('2026-09-04', 2, 2, 2, 'Summer vacation talk, 2-2 version'),
+      p('2026-09-04', 3, 3, 1, 'Third years: song'),
+      p('2026-09-03', 3, 2, 3, 'Yesterday'),
+    ]
+    // 2-3 in period 4: nearest earlier same-year period today (not yesterday's, not year 3).
+    expect(sameDayLesson(periods, { date: '2026-09-04', slot: 4, year: 2 })?.summary).toBe('Summer vacation talk, 2-2 version')
+    // Period 1 has nothing earlier: fall back to the nearest later one.
+    expect(sameDayLesson([p('2026-09-04', 3, 2, 1, 'Later')], { date: '2026-09-04', slot: 1, year: 2 })?.summary).toBe('Later')
+    // Other years, other days and empty periods are ignored.
+    expect(sameDayLesson(periods, { date: '2026-09-04', slot: 4, year: 1 })).toBeNull()
+    expect(sameDayLesson([p('2026-09-04', 1, 2, 1, '')], { date: '2026-09-04', slot: 2, year: 2 })).toBeNull()
+    // A linked plan alone is enough; the slot itself is never its own source.
+    expect(sameDayLesson([p('2026-09-04', 1, 2, 1, '', 'plan-1')], { date: '2026-09-04', slot: 2, year: 2 })?.lessonPlanId).toBe('plan-1')
+    expect(sameDayLesson([p('2026-09-04', 2, 2, 1, 'me')], { date: '2026-09-04', slot: 2, year: 2 })).toBeNull()
   })
 })
 

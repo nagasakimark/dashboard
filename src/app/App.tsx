@@ -4,6 +4,7 @@ import { FeedbackProvider, Spinner } from '@/components/ui'
 import { useApplyAppearance } from '@/data/settings'
 import { SyncProvider } from '@/features/sync/SyncProvider'
 import { AppShell } from './AppShell'
+import { GlobalGuards } from './GlobalGuards'
 import { PwaPrompts } from './PwaPrompts'
 import { RouteError } from './RouteError'
 
@@ -84,6 +85,7 @@ export default function App() {
       <SyncProvider>
         <RouterProvider router={router} />
         <PwaPrompts />
+        <GlobalGuards />
       </SyncProvider>
     </FeedbackProvider>
   )

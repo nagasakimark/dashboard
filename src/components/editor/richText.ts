@@ -4,7 +4,8 @@
  */
 
 /** Convert Quill-specific markup into standard HTML TipTap understands. */
-export function normalizeLegacyHtml(html: string): string {
+export function normalizeLegacyHtml(html: string | null | undefined): string {
+  if (!html) return ''
   if (!html.includes('ql-')) return html
   const doc = new DOMParser().parseFromString(html, 'text/html')
   doc.querySelectorAll('[class*="ql-align-"]').forEach((el) => {
@@ -25,10 +26,10 @@ export function normalizeLegacyHtml(html: string): string {
 }
 
 /** Plain text of an HTML fragment (for search and previews). */
-export function htmlToText(html: string): string {
+export function htmlToText(html: string | null | undefined): string {
   if (!html) return ''
   const doc = new DOMParser().parseFromString(html.replace(/<(\/p|br|\/li|\/h\d)>/gi, '$& '), 'text/html')
   return (doc.body.textContent ?? '').replace(/\s+/g, ' ').trim()
 }
 
-export const isEmptyHtml = (html: string) => htmlToText(html) === '' && !/<img/i.test(html)
+export const isEmptyHtml = (html: string | null | undefined) => !html || (htmlToText(html) === '' && !/<img/i.test(html))

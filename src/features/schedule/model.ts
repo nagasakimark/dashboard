@@ -74,6 +74,27 @@ export function previousForClass(
   return candidates.find((p) => p.classNumber === target.classNumber) ?? candidates[0] ?? null
 }
 
+/**
+ * A lesson already written for the same year group on the same day (same
+ * school, since a day has one), for the other classes to share. The nearest
+ * earlier period wins; if there's none earlier, the nearest later one.
+ */
+export function sameDayLesson(periods: Period[], target: { date: string; slot: Slot; year: number }, lunchAfter = 4): Period | null {
+  const here = slotOrder(target.slot, lunchAfter)
+  const others = periods.filter(
+    (p) =>
+      p.date === target.date &&
+      p.kind === 'class' &&
+      p.year === target.year &&
+      p.slot !== target.slot &&
+      (p.summary.trim() || p.lessonPlanId),
+  )
+  const order = (p: Period) => slotOrder(p.slot, lunchAfter)
+  const earlier = others.filter((p) => order(p) < here).sort((a, b) => order(b) - order(a))
+  const later = others.filter((p) => order(p) > here).sort((a, b) => order(a) - order(b))
+  return earlier[0] ?? later[0] ?? null
+}
+
 /** Readable text colour (black/white) for a background hex colour. */
 export function onColor(hex: string): string {
   const n = parseInt(hex.slice(1), 16)

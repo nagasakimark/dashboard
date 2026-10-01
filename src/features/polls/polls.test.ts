@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createLocalDb, getAt, setAt } from './localDb'
-import { cleanText, computeResults, isRoomCode, pollCsv, viewsFor, type Poll, type Vote } from './model'
+import { cleanText, computeResults, isRoomCode, normalizePoll, normalizeVote, pollCsv, viewsFor, type Poll, type Vote } from './model'
 import { pieSlices } from './chartColors'
 import {
   checkRoom,
@@ -155,5 +155,26 @@ describe('local poll database', () => {
     expect(await cleanUpStaleRooms(db)).toBe(1)
     expect(await db.get(`rooms/${a}`)).toBeNull()
     expect(await db.get(`rooms/${b}`)).not.toBeNull()
+  })
+})
+
+describe('polls as stored by Firebase', () => {
+  it('fills in the lists Firebase drops, so rating and word-cloud polls render', () => {
+    const stored = { id: 'p1', question: 'Rate it', type: 'rating', status: 'active', maxStars: 5 } // no answers, no booleans
+    const p = normalizePoll(stored)!
+    expect(p.answers).toEqual([])
+    expect(p.allowCustom).toBe(false)
+    expect(computeResults(p, []).ratingDist).toHaveLength(5)
+    expect(normalizePoll({ id: 'p2', type: 'wordcloud', answers: { 0: 'a', 1: 'b' } })!.answers).toEqual(['a', 'b'])
+    expect(normalizePoll({ status: 'idle' })!.id).toBe('')
+    expect(normalizePoll(null)).toBeNull()
+    expect(normalizePoll({ id: 'x', type: 'mystery', maxStars: 99 })).toMatchObject({ type: 'single', maxStars: 5 })
+  })
+
+  it('reads votes whose empty lists and nulls are missing', () => {
+    expect(normalizeVote({ type: 'multiple', createdAt: 5 })).toEqual({ type: 'multiple', values: [], customValue: null, createdAt: 5 })
+    expect(normalizeVote({ type: 'rank', ranking: { 0: 'A', 1: 'B' } })).toMatchObject({ ranking: ['A', 'B'] })
+    expect(normalizeVote({ type: 'nonsense' })).toBeNull()
+    expect(parseVotes({ a: { type: 'rating', value: '4' }, b: 'junk' })).toEqual([{ type: 'rating', value: 4, createdAt: undefined }])
   })
 })

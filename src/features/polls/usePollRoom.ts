@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { getPollDb, type PollDb } from './db'
-import type { ArchivedPoll, Poll, Vote } from './model'
+import { normalizePoll, type ArchivedPoll, type Poll, type Vote } from './model'
 import { archivePath, claimRoom, closeRoom, createRoom, heartbeat, HEARTBEAT_MS, parseArchive, parseVotes } from './session'
 
 export interface PollRoom {
@@ -46,7 +46,7 @@ export function usePollRoom(saved: string | null, onCode: (code: string) => void
   useEffect(() => {
     if (!db || !code) return
     const id = setInterval(() => void heartbeat(db, code).catch(() => {}), HEARTBEAT_MS)
-    const offPoll = db.on(`rooms/${code}/currentPoll`, (v) => setPoll(v && typeof v === 'object' && 'id' in v ? (v as Poll) : null))
+    const offPoll = db.on(`rooms/${code}/currentPoll`, (v) => setPoll(v && typeof v === 'object' && 'id' in v ? normalizePoll(v) : null))
     const offArchive = db.on(archivePath(db, code), (v) => setArchive(parseArchive(v)))
     return () => {
       clearInterval(id)

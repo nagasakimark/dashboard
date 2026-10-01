@@ -1,5 +1,15 @@
 import type { PollDb } from './db'
-import { cleanText, isRoomCode, needsAnswers, randomRoomCode, type ArchivedPoll, type Poll, type Vote } from './model'
+import {
+  cleanText,
+  isRoomCode,
+  needsAnswers,
+  normalizePoll,
+  normalizeVote,
+  randomRoomCode,
+  type ArchivedPoll,
+  type Poll,
+  type Vote,
+} from './model'
 
 /** Rooms nobody has opened for a week are deleted. */
 export const STALE_MS = 7 * 24 * 60 * 60 * 1000
@@ -145,11 +155,17 @@ export function parseArchive(value: unknown): ArchivedPoll[] {
   if (!value || typeof value !== 'object') return []
   return Object.entries(value as Record<string, Omit<ArchivedPoll, 'id'>>)
     .filter(([, a]) => a?.poll)
-    .map(([id, a]) => ({ ...a, id, votes: Object.values(a.votes ?? []) }))
+    .map(([id, a]) => ({
+      ...a,
+      id,
+      poll: normalizePoll(a.poll) ?? a.poll,
+      votes: Object.values(a.votes ?? []).flatMap((v) => normalizeVote(v) ?? []),
+    }))
     .sort((a, b) => (b.endedAt ?? 0) - (a.endedAt ?? 0))
 }
 
-export const parseVotes = (value: unknown): Vote[] => (value && typeof value === 'object' ? (Object.values(value) as Vote[]) : [])
+export const parseVotes = (value: unknown): Vote[] =>
+  value && typeof value === 'object' ? Object.values(value).flatMap((v) => normalizeVote(v) ?? []) : []
 
 /* ------------------------------------------------------------- student */
 

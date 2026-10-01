@@ -63,6 +63,27 @@ export function createLocalDb(): PollDb {
           : Object.fromEntries(Object.entries(v as Tree).map(([k, x]) => [k, resolveTimestamps(x)]))
       : v
 
+  /**
+   * Store values the way Firebase does: null and undefined are not kept, and
+   * neither are empty arrays or objects. (Code that reads polls must cope with
+   * missing lists, which production hits with rating and word-cloud polls.)
+   */
+  const asFirebase = (v: unknown): unknown => {
+    if (v === null || v === undefined) return undefined
+    if (Array.isArray(v)) {
+      const list = v.map(asFirebase).filter((x) => x !== undefined)
+      return list.length ? list : undefined
+    }
+    if (typeof v === 'object') {
+      const entries = Object.entries(v as Tree)
+        .map(([k, x]) => [k, asFirebase(x)] as const)
+        .filter(([, x]) => x !== undefined)
+      return entries.length ? Object.fromEntries(entries) : undefined
+    }
+    return v
+  }
+  const prepare = (v: unknown) => asFirebase(resolveTimestamps(v))
+
   let uid = localStorage.getItem('poll-local-uid')
   if (!uid) {
     uid = `local-${crypto.randomUUID().slice(0, 8)}`
@@ -73,15 +94,15 @@ export function createLocalDb(): PollDb {
     kind: 'local',
     uid,
     get: async (path) => getAt(read(), path),
-    set: async (path, value) => write(setAt(read(), path, resolveTimestamps(value))),
+    set: async (path, value) => write(setAt(read(), path, prepare(value))),
     update: async (path, value) => {
       let tree = read()
-      for (const [k, v] of Object.entries(value)) tree = setAt(tree, `${path}/${k}`, resolveTimestamps(v))
+      for (const [k, v] of Object.entries(value)) tree = setAt(tree, `${path}/${k}`, prepare(v))
       write(tree)
     },
     push: async (path, value) => {
       const key = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`
-      write(setAt(read(), `${path}/${key}`, resolveTimestamps(value)))
+      write(setAt(read(), `${path}/${key}`, prepare(value)))
       return key
     },
     remove: async (path) => write(setAt(read(), path, null)),

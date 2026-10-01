@@ -106,3 +106,43 @@ test('creates and links a plan from a period', async ({ page }, info) => {
   await page.getByRole('link', { name: /28 Sep 26\s*3-1/ }).click()
   await expect(page.getByRole('region', { name: 'Monday 28 September' }).getByText('Colours bingo')).toBeVisible()
 })
+
+test('lesson files: several at once, by drag and drop, and a stray drop does not leave the app', async ({ page }) => {
+  await page.goto('./#/lessons/new')
+  await page.waitForURL(/#\/lessons\/[0-9a-f-]{36}/)
+  const resources = page.getByRole('heading', { name: 'Resources' }).locator('xpath=ancestor::*[contains(@class,"p-4")][1]')
+  await page.locator('input[type=file]').setInputFiles([
+    { name: 'one.txt', mimeType: 'text/plain', buffer: Buffer.from('1') },
+    { name: '日本語 #2.pdf', mimeType: 'application/pdf', buffer: Buffer.from('2') },
+    { name: 'empty.txt', mimeType: 'text/plain', buffer: Buffer.alloc(0) },
+  ])
+  await expect(resources.getByRole('link')).toHaveCount(3)
+  await page
+    .locator('input[type=file]')
+    .setInputFiles({ name: 'big.bin', mimeType: 'application/octet-stream', buffer: Buffer.alloc(1_600_000) })
+  await expect(page.getByRole('status').filter({ hasText: /big\.bin.*over 1\.5 MB/ })).toBeVisible()
+
+  // Drop a file on the Resources card: it's attached.
+  const drop = async (target: string) =>
+    page.evaluate((sel) => {
+      const el = document.querySelector(sel)!
+      const dt = new DataTransfer()
+      dt.items.add(new File(['dropped'], 'dropped.txt', { type: 'text/plain' }))
+      const over = new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt })
+      el.dispatchEvent(over)
+      const e = new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt })
+      el.dispatchEvent(e)
+      return { overPrevented: over.defaultPrevented, dropPrevented: e.defaultPrevented }
+    }, target)
+  expect(await drop('[data-file-drop]')).toEqual({ overPrevented: true, dropPrevented: true })
+  await expect(resources.getByRole('link', { name: 'dropped.txt' })).toBeVisible()
+
+  // A file dropped anywhere else is ignored, so the browser doesn't open it and leave the app.
+  expect(await drop('main')).toEqual({ overPrevented: true, dropPrevented: true })
+  await expect(page).toHaveURL(/#\/lessons\/[0-9a-f-]{36}/)
+
+  // A new plan from a period that doesn't exist yet still opens.
+  await page.goto('./#/lessons/new?period=2030-01-01:3&title=Ghost')
+  await page.waitForURL(/#\/lessons\/[0-9a-f-]{36}/)
+  await expect(page.getByLabel('Lesson title')).toHaveValue('Ghost')
+})

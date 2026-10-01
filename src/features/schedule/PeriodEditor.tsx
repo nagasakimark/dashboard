@@ -10,7 +10,7 @@ import { classPosition, progressIndex, setTaught, trackedClasses } from '@/featu
 import { useSchools } from './hooks'
 import { cn } from '@/lib/cn'
 import { deletePeriod, movePeriod, savePeriod, type Undo } from './actions'
-import { daySlots, fromIso, parseClass, previousForClass, slotLabel, slotTimes, timetableFor } from './model'
+import { daySlots, fromIso, parseClass, previousForClass, sameDayLesson, slotLabel, slotTimes, timetableFor } from './model'
 
 export interface PeriodTarget {
   date: string
@@ -51,11 +51,34 @@ function PeriodForm({ target, onClose, period, day, school, onUndoable }: Props 
 
   const plans = useLiveQuery(() => db.lessonPlans.orderBy('title').toArray(), [])
   const history = useLiveQuery(() => (year ? db.periods.where('date').belowOrEqual(target.date).toArray() : []), [year, target.date])
+  const sameDay = useLiveQuery(() => db.periods.where('date').equals(target.date).toArray(), [target.date])
 
-  const previous = useMemo(
-    () => (year && classNumber && history ? previousForClass(history, { ...target, year, classNumber }, school?.lunchAfter) : null),
-    [history, year, classNumber, target, school?.lunchAfter],
-  )
+  // What "Copy from…" offers: the same year group earlier today (usually the same lesson), else this class's last lesson.
+  const previous = useMemo(() => {
+    if (!year || !classNumber) return null
+    return (
+      sameDayLesson(sameDay ?? [], { ...target, year }, school?.lunchAfter) ??
+      (history ? previousForClass(history, { ...target, year, classNumber }, school?.lunchAfter) : null)
+    )
+  }, [sameDay, history, year, classNumber, target, school?.lunchAfter])
+
+  // The description is filled in from the same year group's lesson today, until you change it.
+  const [auto, setAuto] = useState<{ summary: string; plan: string | null; from: string } | null>(null)
+  const autofill = (y: number | null) => {
+    if (!y || kind !== 'class') return
+    const untouched = auto ? summary === auto.summary && lessonPlanId === auto.plan : !summary.trim() && !lessonPlanId
+    if (!untouched) return
+    const src = sameDayLesson(sameDay ?? [], { ...target, year: y }, school?.lunchAfter)
+    if (src) {
+      setSummary(src.summary)
+      setLessonPlanId(src.lessonPlanId)
+      setAuto({ summary: src.summary, plan: src.lessonPlanId, from: `${src.year}-${src.classNumber}` })
+    } else if (auto) {
+      setSummary('')
+      setLessonPlanId(null)
+      setAuto(null)
+    }
+  }
 
   // Curricula that track this class, with their items and progress.
   const schools = useSchools()
@@ -97,6 +120,7 @@ function PeriodForm({ target, onClose, period, day, school, onUndoable }: Props 
     setClassNumber(n)
     setClassText(`${y}-${n}`)
     setError(null)
+    autofill(y)
   }
 
   // Suggested plans first: same year, then the rest.
@@ -273,6 +297,7 @@ function PeriodForm({ target, onClose, period, day, school, onUndoable }: Props 
                   const parsed = parseClass(e.target.value)
                   setYear(parsed?.year ?? null)
                   setClassNumber(parsed?.classNumber ?? null)
+                  autofill(parsed?.year ?? null)
                 }}
               />
             </div>
@@ -314,7 +339,10 @@ function PeriodForm({ target, onClose, period, day, school, onUndoable }: Props 
                 rows={3}
                 placeholder={kind === 'class' ? 'e.g. Unit 3 — “What do you want?” shopping game' : ''}
               />
-              {kind === 'class' && previous && (
+              {auto && summary === auto.summary && (
+                <p className="text-xs text-ink-soft">Filled in from {auto.from} today. Change it if this class does something different.</p>
+              )}
+              {kind === 'class' && previous && !(previous.summary === summary && (previous.lessonPlanId ?? null) === lessonPlanId) && (
                 <button
                   type="button"
                   onClick={() => {
@@ -326,7 +354,8 @@ function PeriodForm({ target, onClose, period, day, school, onUndoable }: Props 
                   <History size={16} className="mt-0.5 shrink-0 text-accent" aria-hidden />
                   <span className="min-w-0">
                     <span className="font-semibold text-ink">
-                      Copy from {previous.year}-{previous.classNumber}, {format(fromIso(previous.date), 'd MMM')}:
+                      Copy from {previous.year}-{previous.classNumber},{' '}
+                      {previous.date === target.date ? 'today' : format(fromIso(previous.date), 'd MMM')}:
                     </span>{' '}
                     <span className="line-clamp-2">{previous.summary || 'linked lesson plan'}</span>
                   </span>

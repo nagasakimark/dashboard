@@ -7,7 +7,7 @@ import { Spinner } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Field'
 import { cn } from '@/lib/cn'
 import { getPollDb, type PollDb } from '@/features/polls/db'
-import { cleanText, isRoomCode, type Poll, type Vote as VoteT } from '@/features/polls/model'
+import { cleanText, isRoomCode, normalizePoll, type Poll, type Vote as VoteT } from '@/features/polls/model'
 import { checkRoom, submitVote } from '@/features/polls/session'
 
 // Only ranking polls need drag and drop, so its code loads on demand.
@@ -241,7 +241,7 @@ function Room({ db, room, onLeave }: { db: PollDb; room: string; onLeave: () => 
   const [poll, setPoll] = useState<Poll | null | undefined>(undefined)
   const [submitted, setSubmitted] = useState<string | null>(null)
 
-  useEffect(() => db.on(`rooms/${room}/currentPoll`, (v) => setPoll(v && typeof v === 'object' ? (v as Poll) : null)), [db, room])
+  useEffect(() => db.on(`rooms/${room}/currentPoll`, (v) => setPoll(normalizePoll(v))), [db, room])
 
   const pollId = poll?.id
   const done = !!pollId && (submitted === pollId || (hasVoted(room, pollId) && !poll?.allowMultiple))

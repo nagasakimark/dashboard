@@ -5,6 +5,7 @@ import { Dialog } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { SyncBadge } from '@/features/sync/SyncBadge'
 import { STATIQ } from './apps'
+import { PageBoundary } from './PageBoundary'
 import { boardNav, plannerNav, type NavItem } from './nav'
 
 export function AppShell() {
@@ -13,7 +14,9 @@ export function AppShell() {
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-0">
         <main className="flex-1">
-          <Outlet />
+          <PageBoundary>
+            <Outlet />
+          </PageBoundary>
         </main>
       </div>
       <BottomBar />

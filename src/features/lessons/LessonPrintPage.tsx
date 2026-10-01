@@ -68,15 +68,15 @@ export default function LessonPrintPage() {
                   {section ? `, ${[pageRef(section.page), section.title].filter(Boolean).join(': ')}` : ''}
                 </span>
               )}
-              {plan.tags.length > 0 && <span>{plan.tags.map((t) => `#${t}`).join(' ')}</span>}
+              {(plan.tags?.length ?? 0) > 0 && <span>{(plan.tags ?? []).map((t) => `#${t}`).join(' ')}</span>}
             </p>
           </header>
           <RichTextView html={plan.content} />
-          {plan.resources.length > 0 && (
+          {(plan.resources?.length ?? 0) > 0 && (
             <section className="mt-6 border-t border-line pt-3">
               <h2 className="mb-1 text-sm font-bold text-ink">Resources</h2>
               <ul className="list-disc pl-5 text-sm">
-                {plan.resources.map((r) => (
+                {(plan.resources ?? []).map((r) => (
                   <li key={r.id}>
                     {r.name}
                     {r.kind === 'link' && r.url && <span className="text-ink-faint"> — {r.url}</span>}

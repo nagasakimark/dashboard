@@ -198,3 +198,27 @@ test('a PDF week with long notes in every period still fits on one page', async 
   // Title, staff overview, the two weeks on one page, and the tally: nothing spills over.
   expect((bytes.toString('latin1').match(/\/Type \/Page\b/g) ?? []).length).toBe(4)
 })
+
+test('a new period is filled in from the same year group earlier that day, and the copy button stays', async ({ page }, info) => {
+  test.skip(info.project.name === 'phone', 'covered at desktop size')
+  await importFixture(page)
+  await page.goto('./#/schedule?v=week&d=2025-01-06')
+  // Monday P1 is 5-1 "Unit 1 greetings". Add 5-2 in period 4: it should start with the same lesson.
+  await page.getByRole('button', { name: 'Add a period on 2025-01-06, period 4' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Add a period' })
+  const summary = dialog.getByLabel('What you did / plan to do')
+  await expect(summary).toHaveValue('')
+  await dialog.getByRole('button', { name: '5-2' }).click()
+  await expect(summary).toHaveValue('Unit 1 greetings')
+  await expect(dialog.getByText('Filled in from 5-1 today')).toBeVisible()
+  // Switching class keeps the auto-filled text until you edit it; editing it stops that.
+  await dialog.getByRole('button', { name: '5-1' }).click()
+  await expect(summary).toHaveValue('Unit 1 greetings')
+  await summary.fill('Something different')
+  await dialog.getByRole('button', { name: '5-2' }).click()
+  await expect(summary).toHaveValue('Something different')
+  // The copy button is still offered when it would change something.
+  await expect(dialog.getByRole('button', { name: /Copy from 5-1, today/ })).toBeVisible()
+  await dialog.getByRole('button', { name: /Copy from 5-1, today/ }).click()
+  await expect(summary).toHaveValue('Unit 1 greetings')
+})
